@@ -8,7 +8,8 @@
 		"PMIC",
 		"PushButton",
 		"Touchscreen",
-        "CODEC"
+        "CODEC",
+		"TempSensor"
 	],
 	"vpaths":[
 		"ADC",
@@ -19,6 +20,7 @@
 		"PushButton",
 		"Touchscreen",
         "CODEC",
+		"TempSensor",
 		"./"],
 	"whitelist":"True",
 	"targets":[
