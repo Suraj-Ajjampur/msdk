@@ -142,7 +142,8 @@ void dmAdvActSetData(dmAdvMsg_t *pMsg)
 
   DM_TRACE_INFO1("dmAdvActSetData: state: %d", dmAdvCb.advState[DM_ADV_HANDLE_DEFAULT]);
 
-  if (dmAdvCb.advState[DM_ADV_HANDLE_DEFAULT] == DM_ADV_STATE_IDLE)
+//This change enables the advertising data to be changed without the device stopping to advertise.
+  if (dmAdvCb.advState[DM_ADV_HANDLE_DEFAULT] == DM_ADV_STATE_IDLE || dmAdvCb.advState[DM_ADV_HANDLE_DEFAULT] == DM_ADV_STATE_ADVERTISING)
   {
     /* set new data in HCI */
     if (pMsg->apiSetData.location == DM_DATA_LOC_ADV)
