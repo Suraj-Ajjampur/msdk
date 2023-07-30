@@ -222,13 +222,13 @@ static const uint8_t datsAdvDataDisc[] = {
     0xDC
 };
 
-static uint8_t datsAdvDataDiscNew[] = {
-    UINT16_TO_BYTES(HCI_ID_ANALOG), /*!Company ID */
-    1,
-    2,
-    3,
-    4
-};
+// static uint8_t datsAdvDataDiscNew[] = {
+//     UINT16_TO_BYTES(HCI_ID_ANALOG), /*!Company ID */
+//     1,
+//     2,
+//     3,
+//     4
+// };
 
 // /*! scan data, discoverable mode */
 // static const uint8_t datsScanDataDisc[] = {
@@ -241,16 +241,30 @@ static uint8_t datsAdvDataDiscNew[] = {
 //   'S'
 // };
 
+// /*! scan data, discoverable mode */
+// static uint8_t datsScanDataDisc[] = {
+//    /*! device name */
+//     6, /*! length */
+//    DM_ADV_TYPE_LOCAL_NAME,
+//    'L', /*! company ID */
+//    'I',
+//    'G',
+//    'H',
+//    'T'
+// };
+
 /*! scan data, discoverable mode */
 static uint8_t datsScanDataDisc[] = {
    /*! device name */
-    6, /*! length */
-   DM_ADV_TYPE_LOCAL_NAME,
+    9, /*! length */
+    DM_ADV_TYPE_MANUFACTURER, /*! AD type */
+    UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
+    0x42,
+    0x6E,
    'L', /*! company ID */
    'I',
    'G',
-   'H',
-   'T'
+   'H'
 };
 
 #define LIGHT_VALUE_POSITION 6
@@ -260,14 +274,15 @@ void updateLightValue(uint32_t tmpVal){
         cnt=0;
         lightSensorValue = tmpVal;
         APP_TRACE_INFO1("Sensor Value in the app code is %u \n\r", lightSensorValue);
-        memcpy(&datsAdvDataDiscNew[2], &lightSensorValue, sizeof(lightSensorValue));
+        //memcpy(&datsAdvDataDiscNew[2], &lightSensorValue, sizeof(lightSensorValue));
+        memcpy(datsScanDataDisc+LIGHT_VALUE_POSITION, &lightSensorValue, sizeof(lightSensorValue));
         for (int i=0; i<6; i++){
-            APP_TRACE_INFO1("0x%x",datsAdvDataDiscNew[i]);
+            APP_TRACE_INFO1("0x%x",datsScanDataDisc[i]);
         }
-        //DmDevReset();
+        DmDevReset();
         //DmAdvSetAdValue();  /* set advertising data */
-        bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
-                    (uint8_t *) datsAdvDataDiscNew);
+        //bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
+        //            (uint8_t *) datsAdvDataDiscNew);
 
     }
 }
