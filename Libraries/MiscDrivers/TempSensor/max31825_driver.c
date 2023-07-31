@@ -33,6 +33,9 @@
 
 #include "max31825_driver.h"
 
+/** Stores the Temperature conversion values for a 12-bit resolution [Change]
+ * 
+*/
 static float temp_data_format[] = {
     0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64 //Add signed bit values further here.
 };
@@ -88,7 +91,8 @@ void print_binary(uint16_t num) {
     printf("\n");
 }
 
-float temp_in_c = 0;
+static float temp_in_c = 0;
+
 void Get_Temp(uint16_t num) {
     //Reset value of temp in c as 0
     temp_in_c = 0;
@@ -128,22 +132,13 @@ int ReadScratchPad(void){
         return -5;
     }
 
-    //Prints the 8 bytes of Temperature Data
-    // printf("Temp Raw: ");
-    // for (i = 0; i < 8; i++) {
-    //     printf("%02X ", buffer[i]);
-    // }
-    // printf("\n");
-
     //Bit formatting 
     uint16_t curr_temp = (buffer[0] + (buffer[1] << 8));
 
-    //print_binary(curr_temp);
     Get_Temp(curr_temp);
-    //Multiply each bit of the curr_temp value with the array
-
     
 
+    // [Change] -Implement the CRC 
     // /* Check CRC8 of received Temperature */
     // setcrc8(0);
     // for (i = 0; i < 8; i++) {
@@ -154,14 +149,12 @@ int ReadScratchPad(void){
     //     printf("CRC Error");
     //     return -7;
     // }
-
     return 0;
-
 }
 
-int32_t OW_MAX31825_Test(void){
+float OW_MAX31825_Test(void){
 
-    int32_t err;
+    float err;
     /* Set 1-Wire to standard speed */
     MXC_OWM_SetOverdrive(0);
 
@@ -180,7 +173,7 @@ int32_t OW_MAX31825_Test(void){
         return err;
     }
     
-    MXC_Delay(3000000);
+    MXC_Delay(3000000); //3 Sec Delay to allow the prev operation to complete
 
     //Read the temp value in C
     err = ReadScratchPad();
@@ -188,5 +181,5 @@ int32_t OW_MAX31825_Test(void){
         return err;
     }
 
-    return 0;
+    return temp_in_c; //Changed to return the current temp value
 }

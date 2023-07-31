@@ -22,6 +22,7 @@
  */
 /*************************************************************************************************/
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include "wsf_types.h"
 #include "util/bstream.h"
@@ -123,6 +124,14 @@ static const appSecCfg_t datsSecCfg = {
     FALSE /*! TRUE to initiate security upon connection */
 };
 
+// typedef struct{
+//     uint8_t secret;
+//     uint8_t id;
+//     float temp_payload;
+// }myData_t;
+
+float TempSensorValue = 0x00;
+
 /* OOB UART parameters */
 #define OOB_BAUD 115200
 #define OOB_FLOW FALSE
@@ -199,7 +208,7 @@ static uint8_t localIrk[] = { 0x95, 0xC8, 0xEE, 0x6F, 0xC5, 0x0D, 0xEF, 0x93,
 **************************************************************************************************/
 
 /*! advertising data, discoverable mode */
-static uint8_t datsAdvDataDisc[] = {
+static const uint8_t datsAdvDataDisc[] = {
     /*! flags */
     2, /*! length */
     DM_ADV_TYPE_FLAGS, /*! AD type */
@@ -218,29 +227,44 @@ static uint8_t datsAdvDataDisc[] = {
     0
 };
 
-
-/*! advertising data, discoverable mode */
-static uint8_t datsAdvDataDiscNew[] = {
-    // 7, /*! length */
-    //DM_ADV_TYPE_MANUFACTURER, /*! AD type */
-    UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
-    1,
-    2,
-    3,
-    4
-};
-
 /*! scan data, discoverable mode */
-static const uint8_t datsScanDataDisc[] = {
-    /*! device name */
-    5, /*! length */
+static uint8_t datsScanDataDisc[] = {
+   /*! device name */
+    9, /*! length */
     DM_ADV_TYPE_LOCAL_NAME, /*! AD type */
-    'T',
+    //UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
+    'T', /*! company ID */
     'E',
     'M',
-    'P'
+    'P',
+    0x42,
+    0x6E,    
+    0x42,
+    0x6E
 };
 
+#define LIGHT_VALUE_POSITION 8
+uint8_t cnt =0;
+void updateTempValue(float tmpVal){
+    if (++cnt>=3){
+        cnt=0;
+        TempSensorValue = tmpVal;
+        APP_TRACE_INFO1("Sensor Value in the app code is %f \n\r", TempSensorValue);
+        //memcpy(&datsAdvDataDiscNew[2], &TempSensorValue, sizeof(TempSensorValue));
+        memcpy(datsScanDataDisc+LIGHT_VALUE_POSITION, &TempSensorValue, sizeof(TempSensorValue));
+        for (int i=0; i<6; i++){
+            APP_TRACE_INFO1("0x%x",datsScanDataDisc[i]);
+        }
+        DmDevReset();
+        //DmAdvSetAdValue();  /* set advertising data */
+        //bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
+        //            (uint8_t *) datsAdvDataDiscNew);
+
+    }
+}
+
+/* Timer for trimming of the 32 kHz crystal */
+wsfTimer_t trimTimer;
 /**************************************************************************************************
   Client Characteristic Configuration Descriptors
 **************************************************************************************************/
@@ -648,15 +672,25 @@ static void datsPrivAddDevToResListInd(dmEvt_t *pMsg)
 /*************************************************************************************************/
 static void datsProcMsg(dmEvt_t *pMsg)
 {
+    
     uint8_t uiEvent = APP_UI_NONE;
-
+    static bool firstProcMsg = true;
     switch (pMsg->hdr.event) {
     case DM_RESET_CMPL_IND:
-        AttsCalculateDbHash();
-        DmSecGenerateEccKeyReq();
-        AppDbNvmReadAll();
-        datsRestoreResolvingList(pMsg);
-        setAdvTxPower();
+        APP_TRACE_INFO0(" DM_RESET_CMPL_IND ----------------------- \n\r");
+        if (firstProcMsg){
+            APP_TRACE_INFO0(" FIRST ----------------------- \n\r");
+            AttsCalculateDbHash();
+            DmSecGenerateEccKeyReq();
+            AppDbNvmReadAll();
+            datsRestoreResolvingList(pMsg);
+            setAdvTxPower();
+            firstProcMsg = false;
+        }
+        else{
+            APP_TRACE_INFO0(" ****** SECOND ----------------------- \n\r");
+            datsSetup(pMsg);
+        }
         uiEvent = APP_UI_RESET_CMPL;
         break;
 

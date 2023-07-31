@@ -65,6 +65,8 @@ void DatsHandlerInit(wsfHandlerId_t handlerId);
 /*************************************************************************************************/
 void DatsHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg);
 
+void updateTempValue(float tmpVal);
+
 #ifdef __cplusplus
 };
 #endif

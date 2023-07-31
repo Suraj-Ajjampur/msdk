@@ -1,10 +1,3 @@
-/**
- * @file    max31825_driver.h
- * @brief   MAX31825 IC driver header
- * @details Defines MAX31825 registers
- *          Implements helper macros
- **/
-
 /******************************************************************************
  * Copyright (C) 2023 Maxim Integrated Products, Inc., All Rights Reserved.
  *
@@ -38,27 +31,16 @@
  *
  ******************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
+#ifndef EXAMPLES_MAX32665_BLE_TEMPBEACON_TEMP_SENSOR_H
+#define EXAMPLES_MAX32665_BLE_TEMPBEACON_TEMP_SENSOR_H
 
-#include "mxc_device.h"
 #include "owm.h"
-#include "board.h"
-#include "mxc_delay.h"
-
-#ifndef LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_
-#define LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_
+#include "max31825_driver.h"
+#include "mxc_device.h"
+#include "mxc_pins.h"
 
 
-// MAX31825 Commands
-#define SKIP_ROM            0xCC
-#define COMMAND_T           0x44
-#define READ_SCRATCHPAD     0xBE
-#define WRITE_SCRATCHPAD    0x4E
-#define DETECT_ADDRESS      0x88
-#define SELECT_ADDRESS      0x70
+void Init_max31825(void);
+float ReadTempVal(void);
 
-float OW_MAX31825_Test(void);
-
-
-#endif // LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_
+#endif //EXAMPLES_MAX32665_BLE_TEMPBEACON_TEMP_SENSOR_H

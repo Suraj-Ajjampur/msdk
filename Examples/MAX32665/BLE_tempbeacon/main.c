@@ -62,6 +62,9 @@
 #include "dats_api.h"
 #include "app_ui.h"
 
+#include "temp_sensor.h"
+#include "timer.h"
+
 /**************************************************************************************************
   Macros
 **************************************************************************************************/
@@ -271,6 +274,12 @@ int main(void)
 #endif
 
     StackInitDats();
+    
+    Init_max31825();
+    ContinuousTimer();
+    MXC_NVIC_SetVector(CONT_TIMER_IRQn, ContinuousTimerHandler);
+    NVIC_EnableIRQ(CONT_TIMER_IRQn);
+
     DatsStart();
 
     WsfOsEnterMainLoop();

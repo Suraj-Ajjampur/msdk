@@ -1,10 +1,3 @@
-/**
- * @file    max31825_driver.h
- * @brief   MAX31825 IC driver header
- * @details Defines MAX31825 registers
- *          Implements helper macros
- **/
-
 /******************************************************************************
  * Copyright (C) 2023 Maxim Integrated Products, Inc., All Rights Reserved.
  *
@@ -38,27 +31,35 @@
  *
  ******************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
+#include "temp_sensor.h"
 
-#include "mxc_device.h"
-#include "owm.h"
-#include "board.h"
-#include "mxc_delay.h"
+//[Change] - Add description Initializing the Temperature Sensor - OWM
+void Init_max31825(void){
+    mxc_owm_cfg_t owm_cfg;
+    owm_cfg.int_pu_en = 1;
+    owm_cfg.ext_pu_mode = MXC_OWM_EXT_PU_ACT_HIGH;
+    owm_cfg.long_line_mode = 0;
 
-#ifndef LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_
-#define LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_
+    #if defined(BOARD_FTHR) || defined(BOARD_FTHR2)
+    MXC_OWM_Init(&owm_cfg, MAP_B); // 1-Wire pins P0.12/13
+    #else
+    MXC_OWM_Init(&owm_cfg, MAP_C); // 1-Wire pins P0.24/25
+    #endif
+}
 
+//[Change] - Add description Read the Temp Value 
+float ReadTempVal(void)
+{
+    float retval = 0;
+    // printf("***** 1-Wire ROM (DS2401) Example *****\n");
 
-// MAX31825 Commands
-#define SKIP_ROM            0xCC
-#define COMMAND_T           0x44
-#define READ_SCRATCHPAD     0xBE
-#define WRITE_SCRATCHPAD    0x4E
-#define DETECT_ADDRESS      0x88
-#define SELECT_ADDRESS      0x70
-
-float OW_MAX31825_Test(void);
-
-
-#endif // LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_
+    /* Test overdrive */
+    retval = OW_MAX31825_Test();
+    if (retval < 0) {
+        //printf("Temp Value: %d; %08x; %08x \n", retval, MXC_OWM->cfg, MXC_OWM->intfl);
+        printf("Example Failed\n");
+        return E_FAIL;
+    }
+    
+    return retval;
+}
