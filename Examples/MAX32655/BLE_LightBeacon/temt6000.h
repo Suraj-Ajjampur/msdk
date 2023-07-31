@@ -1,6 +1,9 @@
 #ifndef LIGHT_SENSOR_H
 #define LIGHT_SENSOR_H
 
+/**************************************************************************************************
+  Header Files
+**************************************************************************************************/
 #include <stdio.h>
 #include <stdint.h>
 #include "wsf_types.h"
@@ -23,7 +26,6 @@
 #include "svc_core.h"
 #include "svc_wp.h"
 #include "util/calc128.h"
-#include "gatt/gatt_api.h"
 #include "dats_api.h"
 #include "wut.h"
 #include "trimsir_regs.h"
@@ -31,8 +33,11 @@
 #include "pal_uart.h"
 #include "tmr.h"
 #include "svc_sds.h"
-void temt6000_Init();
 
+/**************************************************************************************************
+  Local Functions
+**************************************************************************************************/
+void temt6000_Init();
 uint16_t readSensorValue();
 
 #endif // LIGHT_SENSOR_H

@@ -1,3 +1,9 @@
+#ifndef __TIMER_MODULE_FOR_LIGHT_SENSOR__
+#define __TIMER_MODULE_FOR_LIGHT_SENSOR__
+
+/**************************************************************************************************
+  Header Files
+**************************************************************************************************/
 #include "mxc_device.h"
 #include "mxc_sys.h"
 #include "nvic_table.h"
@@ -12,13 +18,17 @@
 #include "pwrseq_regs.h"
 #include "temt6000.h"
 
-#define PWM_CLOCK_SOURCE MXC_TMR_APB_CLK // \ref mxc_tmr_clock_t
-#define FREQ 1000 // (Hz)
-#define DUTY_CYCLE 50 // (%)
-#define CONT_FREQ 2 // (Hz)
-#define CONT_TIMER MXC_TMR1
+/**************************************************************************************************
+  Macros
+**************************************************************************************************/
+#define CONT_FREQ         1
+#define CONT_TIMER        MXC_TMR1
 #define CONT_CLOCK_SOURCE MXC_TMR_8M_CLK
 
+/**************************************************************************************************
+  Local Functions
+**************************************************************************************************/
 void ContinuousTimerHandler(void);
-
 void ContinuousTimer(void);
+
+#endif // __TIMER_MODULE_FOR_LIGHT_SENSOR__

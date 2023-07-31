@@ -121,13 +121,10 @@ static const appSecCfg_t datsSecCfg = {
     FALSE /*! TRUE to initiate security upon connection */
 };
 
-// typedef struct{
-//     uint8_t secret;
-//     uint8_t id;
-//     float payload;
-// }myData_t;
-
-volatile uint32_t lightSensorValue = 0x00;
+uint32_t lightSensorValue = 0x00;
+wsfHandlerId_t myTimerHandlerId;
+wsfTimer_t myTimer;
+uint32_t delayStart_ms;
 
 /* OOB UART parameters */
 #define OOB_BAUD 115200
@@ -205,7 +202,7 @@ static uint8_t localIrk[] = { 0x95, 0xC8, 0xEE, 0x6F, 0xC5, 0x0D, 0xEF, 0x93,
 **************************************************************************************************/
 
 /*! advertising data, discoverable mode */
-static const uint8_t datsAdvDataDisc[] = {
+static uint8_t datsAdvDataDisc[] = {
     /*! flags */
     2, /*! length */
     DM_ADV_TYPE_FLAGS, /*! AD type */
@@ -216,75 +213,49 @@ static const uint8_t datsAdvDataDisc[] = {
     7, /*! length */
     DM_ADV_TYPE_MANUFACTURER, /*! AD type */
     UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
-    0x65,
-    0x55,
-    0x32,
-    0xDC
+    0x00,
+    0x00,
+    0x00,
+    0x00
 };
 
-// static uint8_t datsAdvDataDiscNew[] = {
-//     UINT16_TO_BYTES(HCI_ID_ANALOG), /*!Company ID */
-//     1,
-//     2,
-//     3,
-//     4
-// };
-
-// /*! scan data, discoverable mode */
-// static const uint8_t datsScanDataDisc[] = {
-//   /*! device name */
-//    5, /*! length */
-//   DM_ADV_TYPE_LOCAL_NAME, /*! AD type */
-//    'D',
-//   'A',
-//   'T',
-//   'S'
-// };
-
-// /*! scan data, discoverable mode */
-// static uint8_t datsScanDataDisc[] = {
-//    /*! device name */
-//     6, /*! length */
-//    DM_ADV_TYPE_LOCAL_NAME,
-//    'L', /*! company ID */
-//    'I',
-//    'G',
-//    'H',
-//    'T'
-// };
+static uint8_t datsAdvDataDiscNew[] = {
+    //DM_ADV_TYPE_MANUFACTURER,
+    UINT16_TO_BYTES(HCI_ID_ANALOG), /*!Company ID */
+    1,
+    2,
+    3,
+    4
+};
 
 /*! scan data, discoverable mode */
-static uint8_t datsScanDataDisc[] = {
-   /*! device name */
-    9, /*! length */
-    DM_ADV_TYPE_MANUFACTURER, /*! AD type */
-    UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
-    0x42,
-    0x6E,
-   'L', /*! company ID */
-   'I',
-   'G',
-   'H'
+static const uint8_t datsScanDataDisc[] = {
+  /*! device name */
+   6, /*! length */
+   DM_ADV_TYPE_LOCAL_NAME, /*! AD type */
+  'L',
+  'I',
+  'G',
+  'H',
+  'T'
 };
 
-#define LIGHT_VALUE_POSITION 6
-uint8_t cnt =0;
-void updateLightValue(uint32_t tmpVal){
-    if (++cnt>=3){
-        cnt=0;
-        lightSensorValue = tmpVal;
-        APP_TRACE_INFO1("Sensor Value in the app code is %u \n\r", lightSensorValue);
-        //memcpy(&datsAdvDataDiscNew[2], &lightSensorValue, sizeof(lightSensorValue));
-        memcpy(datsScanDataDisc+LIGHT_VALUE_POSITION, &lightSensorValue, sizeof(lightSensorValue));
-        for (int i=0; i<6; i++){
-            APP_TRACE_INFO1("0x%x",datsScanDataDisc[i]);
-        }
-        DmDevReset();
-        //DmAdvSetAdValue();  /* set advertising data */
-        //bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
-        //            (uint8_t *) datsAdvDataDiscNew);
+void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
+    static uint32_t previousSensorValue = 0;
+    if (lightSensorValue != previousSensorValue){
+        previousSensorValue = lightSensorValue;
+        memcpy(&datsAdvDataDiscNew[2], &lightSensorValue, sizeof(lightSensorValue));
+        bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
+            (uint8_t *) datsAdvDataDiscNew);
     }
+    delayStart_ms = 500;
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
+
+#define LIGHT_VALUE_POSITION 6
+void updateLightValue(uint32_t tmpVal){
+    lightSensorValue = tmpVal;
 }
 
 /* Timer for trimming of the 32 kHz crystal */
@@ -1066,6 +1037,12 @@ void DatsHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg)
     }
 }
 
+void WsfTimerInit_Sensor(){
+    myTimerHandlerId = WsfOsSetNextHandler(myTimerHandlerCB);
+    myTimer.handlerId = myTimerHandlerId;
+
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
 /*************************************************************************************************/
 /*!
  *  \brief  Start the application.
