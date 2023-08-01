@@ -67,6 +67,8 @@ void DatsHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg);
 
 void updateTempValue(float tmpVal);
 
+void WsfTimerInit_Sensor();
+
 #ifdef __cplusplus
 };
 #endif

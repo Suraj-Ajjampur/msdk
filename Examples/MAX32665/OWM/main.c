@@ -39,6 +39,7 @@
 #include "mxc_device.h"
 #include "owm.h"
 #include "board.h"
+#include "max31825_driver.h"
 
 // Local global variables
 uint8_t utilcrc8;
@@ -168,15 +169,26 @@ int main(void)
 #else
     MXC_OWM_Init(&owm_cfg, MAP_C); // 1-Wire pins P0.24/25
 #endif
+    static int count = 0;
+    while(1){
 
     /* Test overdrive */
-    retval = ow_romid_test(1);
+    if (count == 0){
+        retval = OW_MAX31825_Test();
+    }
+    else 
+       retval = Read_Max31825_temp();
+       
     if (retval) {
-        printf("Overdrive results: %d; %08x; %08x \n", retval, MXC_OWM->cfg, MXC_OWM->intfl);
+        printf("Error Code: %d",retval);
         printf("Example Failed\n");
         return E_FAIL;
     }
-
+    else{
+        printf("\n\rTemp Value %f", get_max31825_temp());
+    }
+    count++;
+    }
     printf("\nExample Succeeded\n");
     return E_NO_ERROR;
 }

@@ -50,16 +50,27 @@ void Init_max31825(void){
 //[Change] - Add description Read the Temp Value 
 float ReadTempVal(void)
 {
-    float retval = 0;
-    // printf("***** 1-Wire ROM (DS2401) Example *****\n");
+    int retval = 0;
 
-    /* Test overdrive */
-    retval = OW_MAX31825_Test();
-    if (retval < 0) {
-        //printf("Temp Value: %d; %08x; %08x \n", retval, MXC_OWM->cfg, MXC_OWM->intfl);
+    static int count = 0;
+
+    /* Run the MAX3131 */
+
+    //Initialize only the first time
+    if (count == 0){
+        retval = OW_MAX31825_Test();
+    }
+    else 
+       retval = Read_Max31825_temp();
+       
+    if (retval) {
+        printf("Error Code: %d",retval);
         printf("Example Failed\n");
         return E_FAIL;
     }
-    
-    return retval;
+    // else{
+    //     printf("\n\rTemp Value %f", get_max31825_temp());
+    // }
+    count++;
+    return get_max31825_temp();
 }

@@ -124,13 +124,10 @@ static const appSecCfg_t datsSecCfg = {
     FALSE /*! TRUE to initiate security upon connection */
 };
 
-// typedef struct{
-//     uint8_t secret;
-//     uint8_t id;
-//     float temp_payload;
-// }myData_t;
-
-float TempSensorValue = 0x00;
+float TempSensorValue = 0;
+wsfHandlerId_t myTimerHandlerId;
+wsfTimer_t myTimer;
+uint32_t delayStart_ms;
 
 /* OOB UART parameters */
 #define OOB_BAUD 115200
@@ -208,59 +205,55 @@ static uint8_t localIrk[] = { 0x95, 0xC8, 0xEE, 0x6F, 0xC5, 0x0D, 0xEF, 0x93,
 **************************************************************************************************/
 
 /*! advertising data, discoverable mode */
-static const uint8_t datsAdvDataDisc[] = {
+static uint8_t datsAdvDataDisc[] = {
     /*! flags */
     2, /*! length */
     DM_ADV_TYPE_FLAGS, /*! AD type */
     DM_FLAG_LE_GENERAL_DISC | /*! flags */
         DM_FLAG_LE_BREDR_NOT_SUP,
 
- 
-
     /*! manufacturer specific data */
-    7, /*! length */
+    10, /*! length */
     DM_ADV_TYPE_MANUFACTURER, /*! AD type */
     UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
-    0,
-    0,
-    0,
-    0
+    0xFF,
+    0xFF,
+    0xFF,
+    0x00,
+    0x00,
+    0x00,
+    0x00
+};
+
+ 
+
+/*! advertising data, discoverable mode */
+static uint8_t datsAdvDataDiscNew[] = {
+    UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
+    0xFF,
+    0xFF,
+    0xFF,
+    1,
+    2,
+    3,
+    4
 };
 
 /*! scan data, discoverable mode */
 static uint8_t datsScanDataDisc[] = {
    /*! device name */
-    9, /*! length */
+    5, /*! length */
     DM_ADV_TYPE_LOCAL_NAME, /*! AD type */
-    //UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
     'T', /*! company ID */
     'E',
     'M',
-    'P',
-    0x42,
-    0x6E,    
-    0x42,
-    0x6E
+    'P'
 };
 
 #define LIGHT_VALUE_POSITION 8
 uint8_t cnt =0;
 void updateTempValue(float tmpVal){
-    if (++cnt>=3){
-        cnt=0;
-        TempSensorValue = tmpVal;
-        APP_TRACE_INFO1("Sensor Value in the app code is %f \n\r", TempSensorValue);
-        //memcpy(&datsAdvDataDiscNew[2], &TempSensorValue, sizeof(TempSensorValue));
-        memcpy(datsScanDataDisc+LIGHT_VALUE_POSITION, &TempSensorValue, sizeof(TempSensorValue));
-        for (int i=0; i<6; i++){
-            APP_TRACE_INFO1("0x%x",datsScanDataDisc[i]);
-        }
-        DmDevReset();
-        //DmAdvSetAdValue();  /* set advertising data */
-        //bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
-        //            (uint8_t *) datsAdvDataDiscNew);
-
-    }
+    TempSensorValue = tmpVal;
 }
 
 /* Timer for trimming of the 32 kHz crystal */
@@ -593,23 +586,19 @@ static void datsSetup(dmEvt_t *pMsg)
 }
 
 /**************************************************************************************************/
-// void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg)
-// {
-//     static uint32_t counter = 0 ;
-//     uint32_t delayStart_ms = 500;
-//          //do stuff
+void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
-//      //kick off timer again
-//      WsfTimerStartMs(&myTimer, delayStart_ms);
-//      // copy counter into datsAdvDataDisc offset 7 using memcpy
-//     memcpy(&datsAdvDataDiscNew[2], &counter, sizeof(counter));
-//     //  bool_t retVal = AppAdvSetAdValue(APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
-//     //                 (uint8_t *) datsAdvDataDiscNew);
-//      bool_t retVal = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT,APP_ADV_DATA_DISCOVERABLE,DM_ADV_TYPE_MANUFACTURER,sizeof(datsAdvDataDiscNew),
-//                    (uint8_t *) datsAdvDataDiscNew);
-//     counter++;
-//     APP_TRACE_INFO1("data sent: %s", (retVal? "True":"false"));
-// }
+    static uint32_t previousSensorValue = 0;
+    //Update only if value has changed
+    if (TempSensorValue != previousSensorValue){ 
+        previousSensorValue = TempSensorValue;
+        memcpy(&datsAdvDataDiscNew[5], &TempSensorValue, sizeof(TempSensorValue));
+        bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
+            (uint8_t *) datsAdvDataDiscNew);
+    }
+    delayStart_ms = 500;
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
 
 /*************************************************************************************************/
 /*!
@@ -1051,6 +1040,12 @@ void DatsHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg)
     }
 }
 
+void WsfTimerInit_Sensor(){
+    myTimerHandlerId = WsfOsSetNextHandler(myTimerHandlerCB);
+    myTimer.handlerId = myTimerHandlerId;
+
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
 /*************************************************************************************************/
 /*!
  *  \brief  Start the application.

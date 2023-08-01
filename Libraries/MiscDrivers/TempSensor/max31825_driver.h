@@ -58,7 +58,12 @@
 #define DETECT_ADDRESS      0x88
 #define SELECT_ADDRESS      0x70
 
-float OW_MAX31825_Test(void);
+int32_t OW_MAX31825_Test(void);
 
+int ReadScratchPad(void);
+
+double get_max31825_temp(void);
+
+int32_t Read_Max31825_temp(void);
 
 #endif // LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_

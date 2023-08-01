@@ -33,9 +33,6 @@
 
 #include "max31825_driver.h"
 
-/** Stores the Temperature conversion values for a 12-bit resolution [Change]
- * 
-*/
 static float temp_data_format[] = {
     0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64 //Add signed bit values further here.
 };
@@ -56,7 +53,7 @@ int Convert_T(void){
     /* Send a convert T command  */
     buffer[0] = COMMAND_T;
     MXC_OWM_Write(buffer, 1);
-    printf("Convert T Command\n\r");
+    //printf("Convert T Command\n\r");
 
     return 0;
 }
@@ -91,8 +88,7 @@ void print_binary(uint16_t num) {
     printf("\n");
 }
 
-static float temp_in_c = 0;
-
+float temp_in_c = 0;
 void Get_Temp(uint16_t num) {
     //Reset value of temp in c as 0
     temp_in_c = 0;
@@ -104,17 +100,19 @@ void Get_Temp(uint16_t num) {
             temp_in_c = temp_in_c + temp_data_format[i];
         }
     }
-    printf("Value of Temp in C is %.4fC", (double)temp_in_c);
+    //printf("Value of Temp in C is %.4fC", (double)temp_in_c);
 }
 
 int ReadScratchPad(void){
-
+    //MXC_Delay(1000000);
     uint8_t buffer[8];
+
     //int i;
     //uint8_t crc8;
 
     /* Error if presence pulse not detected. */
     if (MXC_OWM_Reset() == 0) {
+        printf("Fails here");
         return -2;
     }
 
@@ -124,7 +122,7 @@ int ReadScratchPad(void){
 
     buffer[0] = READ_SCRATCHPAD;
     MXC_OWM_Write(buffer, 1);
-    printf("Read Scratchpad command\n\r");
+    //printf("Read Scratchpad command\n\r");
 
     /* Read the Scratchpad */
     memset(buffer, 0, sizeof(buffer));
@@ -132,14 +130,23 @@ int ReadScratchPad(void){
         return -5;
     }
 
+    //Prints the 8 bytes of Temperature Data
+    // printf("Temp Raw: ");
+    // for (i = 0; i < 8; i++) {
+    //     printf("%02X ", buffer[i]);
+    // }
+    // printf("\n");
+
     //Bit formatting 
     uint16_t curr_temp = (buffer[0] + (buffer[1] << 8));
 
+    //print_binary(curr_temp);
     Get_Temp(curr_temp);
-    
+    //Multiply each bit of the curr_temp value with the array
 
-    // [Change] -Implement the CRC 
-    // /* Check CRC8 of received Temperature */
+    
+/*
+    //  Check CRC8 of received Temperature 
     // setcrc8(0);
     // for (i = 0; i < 8; i++) {
     //     crc8 = docrc8(buffer[i]);
@@ -149,12 +156,16 @@ int ReadScratchPad(void){
     //     printf("CRC Error");
     //     return -7;
     // }
+*/
+
+
     return 0;
+
 }
 
-float OW_MAX31825_Test(void){
+int32_t OW_MAX31825_Test(void){
 
-    float err;
+    int32_t err;
     /* Set 1-Wire to standard speed */
     MXC_OWM_SetOverdrive(0);
 
@@ -164,7 +175,7 @@ float OW_MAX31825_Test(void){
         return err;
     }
 
-    printf("\n\rMAX31825 Device Initialized\n\r");
+    //printf("\n\rMAX31825 Device Initialized\n\r");
 
     MXC_Delay(20000);
 
@@ -173,7 +184,7 @@ float OW_MAX31825_Test(void){
         return err;
     }
     
-    MXC_Delay(3000000); //3 Sec Delay to allow the prev operation to complete
+    MXC_Delay(175000);
 
     //Read the temp value in C
     err = ReadScratchPad();
@@ -181,5 +192,37 @@ float OW_MAX31825_Test(void){
         return err;
     }
 
-    return temp_in_c; //Changed to return the current temp value
+    return 0;
+}
+
+//getter function for max31825 temp
+double get_max31825_temp(void){
+    return (double)temp_in_c;
+}
+
+//Max31825 init
+
+//Read temp - Sequence of commands send to continously read the temperature.
+
+int32_t Read_Max31825_temp(void){
+
+    int32_t err;
+
+    MXC_Delay(2000000);
+
+    err = Convert_T();
+    if ( err != 0){
+        return err;
+    }
+    
+    MXC_Delay(175000); // Need 175ms Delay 
+    // Delay of 150000 and the presence detect does not work.
+
+    //Read the temp value in C
+    err = ReadScratchPad();
+    if (err!= 0){
+        return err;
+    }
+
+    return 0;
 }

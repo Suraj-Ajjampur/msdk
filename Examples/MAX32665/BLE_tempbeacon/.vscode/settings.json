@@ -91,6 +91,9 @@
     ],
     "C_Cpp.default.forcedInclude": [
         "${workspaceFolder}/build/project_defines.h"
-    ]
+    ],
+    "files.associations": {
+        "max31825_driver.h": "c"
+    }
 }
 

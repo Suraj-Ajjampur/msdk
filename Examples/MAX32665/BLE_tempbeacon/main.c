@@ -276,11 +276,15 @@ int main(void)
     StackInitDats();
     
     Init_max31825();
-    ContinuousTimer();
-    MXC_NVIC_SetVector(CONT_TIMER_IRQn, ContinuousTimerHandler);
-    NVIC_EnableIRQ(CONT_TIMER_IRQn);
 
     DatsStart();
+
+    //Initialize the timer
+    MXC_NVIC_SetVector(CONT_TIMER_IRQn, ContinuousTimerHandler);
+    NVIC_EnableIRQ(CONT_TIMER_IRQn);
+    ContinuousTimer();
+
+    WsfTimerInit_Sensor();
 
     WsfOsEnterMainLoop();
 

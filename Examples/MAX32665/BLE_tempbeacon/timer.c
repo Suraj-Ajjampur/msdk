@@ -3,7 +3,7 @@
 
 void ContinuousTimerHandler(void)
 {
-    static float sensorValue;
+    static double sensorValue;
     // Clear interrupt
     MXC_TMR_ClearFlags(CONT_TIMER);
     MXC_GPIO_OutToggle(led_pin[0].port, led_pin[0].mask);
@@ -16,16 +16,9 @@ void ContinuousTimer()
 {
     // Declare variables
     mxc_tmr_cfg_t tmr;
-    uint32_t periodTicks = PeripheralClock / 4 * INTERVAL_TIME_CONT;
+    uint32_t periodTicks = PeripheralClock / 4 * INTERVAL_TIME_CONT; //Change to 1s
 
-    /*
-    Steps for configuring a timer for PWM mode:
-    1. Disable the timer
-    2. Set the prescale value
-    3  Configure the timer for continuous mode
-    4. Set polarity, timer parameters
-    5. Enable Timer
-    */
+    //printf("periodTicks is %u",periodTicks);
 
     MXC_TMR_Shutdown(CONT_TIMER);
 

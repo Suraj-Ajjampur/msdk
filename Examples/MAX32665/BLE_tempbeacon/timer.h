@@ -27,13 +27,8 @@
 
 // Parameters for Continuous timer
 #define INTERVAL_TIME_CONT 1 // (s) will toggle after every interval
-#define CONT_TIMER MXC_TMR0 // Can be MXC_TMR0 through MXC_TMR5
-#define CONT_TIMER_IRQn TMR0_IRQn
-
-// Parameters for One-shot timer
-#define INTERVAL_TIME_OST 3 // (s)
-#define OST_TIMER MXC_TMR1 // Can be MXC_TMR0 through MXC_TMR5
-#define OST_TIMER_IRQn TMR1_IRQn
+#define CONT_TIMER MXC_TMR1 // Can be MXC_TMR0 through MXC_TMR5
+#define CONT_TIMER_IRQn TMR1_IRQn
 
 void ContinuousTimerHandler(void);
 
