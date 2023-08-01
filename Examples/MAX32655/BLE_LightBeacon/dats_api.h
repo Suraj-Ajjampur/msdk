@@ -64,7 +64,7 @@ void DatsHandlerInit(wsfHandlerId_t handlerId);
  */
 /*************************************************************************************************/
 void DatsHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg);
-
+void WsfTimerInit_Sensor();
 void updateLightValue(uint32_t lightSensor);
 
 #ifdef __cplusplus

@@ -265,17 +265,20 @@ int main(void)
     /* Shutdown the 32 MHz crystal and the BLE DBB */
     PalBbDisable();
 #endif
+    /* Initialize Sensor */
+    temt6000_Init();
 
-    StackInitDats();
-    
-    ContinuousTimer();
-    //PWMTimer();
+    /* Configure Timer */
     MXC_NVIC_SetVector(TMR1_IRQn, ContinuousTimerHandler);
     NVIC_EnableIRQ(TMR1_IRQn);
-    
-    temt6000_Init();
+    ContinuousTimer();
+
+    /* Initialize DATS Stack */
+    StackInitDats();
     DatsStart();
 
+    /* Software Timer for Light Sensor */
+    WsfTimerInit_Sensor();
     WsfOsEnterMainLoop();
 
     /* Does not return. */
