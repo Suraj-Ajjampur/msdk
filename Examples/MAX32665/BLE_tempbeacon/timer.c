@@ -16,10 +16,8 @@ void ContinuousTimer()
 {
     // Declare variables
     mxc_tmr_cfg_t tmr;
-    uint32_t periodTicks = PeripheralClock / 4 * INTERVAL_TIME_CONT; //Change to 1s
-
-    //printf("periodTicks is %u",periodTicks);
-
+    uint32_t periodTicks = PeripheralClock / 4 * INTERVAL_TIME_CONT;
+    
     MXC_TMR_Shutdown(CONT_TIMER);
 
     tmr.pres = TMR_PRES_4;

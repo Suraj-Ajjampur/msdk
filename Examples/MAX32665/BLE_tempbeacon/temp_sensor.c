@@ -45,6 +45,9 @@ void Init_max31825(void){
     #else
     MXC_OWM_Init(&owm_cfg, MAP_C); // 1-Wire pins P0.24/25
     #endif
+
+    OW_MAX31825_Test1();
+    
 }
 
 //[Change] - Add description Read the Temp Value 
@@ -52,25 +55,17 @@ float ReadTempVal(void)
 {
     int retval = 0;
 
-    static int count = 0;
-
-    /* Run the MAX3131 */
-
-    //Initialize only the first time
-    if (count == 0){
-        retval = OW_MAX31825_Test();
-    }
-    else 
-       retval = Read_Max31825_temp();
-       
+    retval = Read_Max31825_temp();   
     if (retval) {
         printf("Error Code: %d",retval);
         printf("Example Failed\n");
         return E_FAIL;
     }
-    // else{
-    //     printf("\n\rTemp Value %f", get_max31825_temp());
-    // }
-    count++;
+
+    retval = Convert_T();
+    if ( retval != 0){
+        return retval;
+    }
+
     return get_max31825_temp();
 }

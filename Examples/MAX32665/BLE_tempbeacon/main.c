@@ -273,19 +273,20 @@ int main(void)
     PalBbDisable();
 #endif
 
-    StackInitDats();
-    
+    /* Initialize Sensor */
     Init_max31825();
 
-    DatsStart();
-
-    //Initialize the timer
+    /* Configure Timer */
     MXC_NVIC_SetVector(CONT_TIMER_IRQn, ContinuousTimerHandler);
     NVIC_EnableIRQ(CONT_TIMER_IRQn);
     ContinuousTimer();
 
-    WsfTimerInit_Sensor();
+    /* Initialize DATS Stack */
+    StackInitDats();
+    DatsStart();
 
+    /* Software Timer for Light Sensor */
+    WsfTimerInit_Sensor();
     WsfOsEnterMainLoop();
 
     /* Does not return. */

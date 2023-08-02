@@ -66,4 +66,6 @@ double get_max31825_temp(void);
 
 int32_t Read_Max31825_temp(void);
 
+int OW_MAX31825_Test1(void);
+
 #endif // LIBRARIES_MISCDRIVERS_TEMPSENSOR_MAX31825_DRIVER_H_

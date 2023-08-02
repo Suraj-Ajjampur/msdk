@@ -136,6 +136,11 @@ uint32_t delayStart_ms;
 /*! TRUE if Out-of-band pairing data is to be sent */
 static const bool_t datsSendOobData = FALSE;
 
+/* Security Parameters*/
+#define TEMP_SECURITY_1 0xAA
+#define TEMP_SECURITY_2 0xBB
+#define TEMP_SECURITY_3 0xCC
+
 /* OOB Connection identifier */
 dmConnId_t oobConnId;
 
@@ -213,30 +218,22 @@ static uint8_t datsAdvDataDisc[] = {
         DM_FLAG_LE_BREDR_NOT_SUP,
 
     /*! manufacturer specific data */
-    10, /*! length */
+    22, /*! length */
     DM_ADV_TYPE_MANUFACTURER, /*! AD type */
     UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
-    0xFF,
-    0xFF,
-    0xFF,
-    0x00,
-    0x00,
-    0x00,
-    0x00
+    TEMP_SECURITY_1,
+    TEMP_SECURITY_2,
+    TEMP_SECURITY_3,
+    1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
 };
 
- 
-
-/*! advertising data, discoverable mode */
+/*! New advertising data*/
 static uint8_t datsAdvDataDiscNew[] = {
-    UINT16_TO_BYTES(HCI_ID_ANALOG), /*! company ID */
-    0xFF,
-    0xFF,
-    0xFF,
-    1,
-    2,
-    3,
-    4
+    UINT16_TO_BYTES(HCI_ID_ANALOG), /*!Company ID */
+    TEMP_SECURITY_1,
+    TEMP_SECURITY_2,
+    TEMP_SECURITY_3,
+    1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
 };
 
 /*! scan data, discoverable mode */
@@ -244,20 +241,30 @@ static uint8_t datsScanDataDisc[] = {
    /*! device name */
     5, /*! length */
     DM_ADV_TYPE_LOCAL_NAME, /*! AD type */
-    'T', /*! company ID */
+    'T', 
     'E',
     'M',
     'P'
 };
+char dataToEncrypt[32] = {0x00};
+void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
-#define LIGHT_VALUE_POSITION 8
-uint8_t cnt =0;
+    static uint32_t previousSensorValue = 0;
+    //Update only if value has changed
+    if (TempSensorValue != previousSensorValue){ 
+        previousSensorValue = TempSensorValue;
+        memcpy(&datsAdvDataDiscNew[5], &TempSensorValue, sizeof(TempSensorValue));
+        bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
+            (uint8_t *) datsAdvDataDiscNew);
+    }
+    delayStart_ms = 500;
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
+
 void updateTempValue(float tmpVal){
     TempSensorValue = tmpVal;
 }
 
-/* Timer for trimming of the 32 kHz crystal */
-wsfTimer_t trimTimer;
 /**************************************************************************************************
   Client Characteristic Configuration Descriptors
 **************************************************************************************************/
@@ -585,21 +592,6 @@ static void datsSetup(dmEvt_t *pMsg)
     AppAdvStart(APP_MODE_AUTO_INIT);
 }
 
-/**************************************************************************************************/
-void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
-
-    static uint32_t previousSensorValue = 0;
-    //Update only if value has changed
-    if (TempSensorValue != previousSensorValue){ 
-        previousSensorValue = TempSensorValue;
-        memcpy(&datsAdvDataDiscNew[5], &TempSensorValue, sizeof(TempSensorValue));
-        bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
-            (uint8_t *) datsAdvDataDiscNew);
-    }
-    delayStart_ms = 500;
-    WsfTimerStartMs(&myTimer, delayStart_ms);
-}
-
 /*************************************************************************************************/
 /*!
  *  \brief  Begin restoring the resolving list.
@@ -661,25 +653,15 @@ static void datsPrivAddDevToResListInd(dmEvt_t *pMsg)
 /*************************************************************************************************/
 static void datsProcMsg(dmEvt_t *pMsg)
 {
-    
     uint8_t uiEvent = APP_UI_NONE;
-    static bool firstProcMsg = true;
+
     switch (pMsg->hdr.event) {
     case DM_RESET_CMPL_IND:
-        APP_TRACE_INFO0(" DM_RESET_CMPL_IND ----------------------- \n\r");
-        if (firstProcMsg){
-            APP_TRACE_INFO0(" FIRST ----------------------- \n\r");
-            AttsCalculateDbHash();
-            DmSecGenerateEccKeyReq();
-            AppDbNvmReadAll();
-            datsRestoreResolvingList(pMsg);
-            setAdvTxPower();
-            firstProcMsg = false;
-        }
-        else{
-            APP_TRACE_INFO0(" ****** SECOND ----------------------- \n\r");
-            datsSetup(pMsg);
-        }
+        AttsCalculateDbHash();
+        DmSecGenerateEccKeyReq();
+        AppDbNvmReadAll();
+        datsRestoreResolvingList(pMsg);
+        setAdvTxPower();
         uiEvent = APP_UI_RESET_CMPL;
         break;
 
@@ -1046,6 +1028,7 @@ void WsfTimerInit_Sensor(){
 
     WsfTimerStartMs(&myTimer, delayStart_ms);
 }
+
 /*************************************************************************************************/
 /*!
  *  \brief  Start the application.
