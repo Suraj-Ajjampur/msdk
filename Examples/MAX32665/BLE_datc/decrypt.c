@@ -3,6 +3,7 @@
 /***** Globals *****/
 char temp[] = { 0x00, 0x00, 0x00 }; //for ascii_to_byte()
 char result[16];
+char outresult[16];
 const char *_key = "10a58869d74be5a374cf867cfb473859";
 
 void ascii_to_byte(const char *src, char *dst, int len)
@@ -34,13 +35,14 @@ char* AES128_ECB_dec(char* inputData)
     char ct[MXC_AES_DATA_LEN];
     ascii_to_byte(inputData, ct, MXC_AES_DATA_LEN);
 
+    //char expected[MXC_AES_DATA_LEN];
     MXC_TPU_Cipher_Config(MXC_TPU_MODE_ECB, MXC_TPU_CIPHER_AES128);
-    MXC_TPU_Cipher_AES_Decrypt(ct, iv_dst, key, MXC_TPU_CIPHER_AES128, MXC_TPU_MODE_ECB,
-                               MXC_AES_DATA_LEN, result);
+    MXC_TPU_Cipher_AES_Decrypt(inputData, iv_dst, key, MXC_TPU_CIPHER_AES128, MXC_TPU_MODE_ECB,
+                               MXC_AES_DATA_LEN, outresult);
 
-    // const char *_expected = "00000000000000000000000000000000";
-    // char expected[MXC_AES_DATA_LEN];
-    // ascii_to_byte(_expected, expected, MXC_AES_DATA_LEN);
+    //const char *_expected = "00000000000000000000000000000000";
+    
+    //ascii_to_byte(_expected, expected, MXC_AES_DATA_LEN);
 
-    return result;
+    return outresult;
 }

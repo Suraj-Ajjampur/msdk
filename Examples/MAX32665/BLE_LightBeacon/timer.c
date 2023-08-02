@@ -9,6 +9,7 @@ void ContinuousTimerHandler(void)
     MXC_TMR_ClearFlags(CONT_TIMER);
     MXC_GPIO_OutToggle(led_pin[0].port, led_pin[0].mask);
     sensorValue = readSensorValue();
+    printf(" Sensor Value - %u\n\r", sensorValue);
     updateLightValue(sensorValue);
 }
 

@@ -50,6 +50,7 @@
 #include "pal_uart.h"
 #include "tmr.h"
 #include "sdsc_api.h"
+#include "decrypt.h"
 /**************************************************************************************************
 Macros
 **************************************************************************************************/
@@ -151,6 +152,11 @@ static const appSecCfg_t datcSecCfg = {
 /* OOB UART parameters */
 #define OOB_BAUD 115200
 #define OOB_FLOW FALSE
+
+/* Security Parameters*/
+#define LIGHT_SECURITY_1 0x42
+#define LIGHT_SECURITY_2 0x6F
+#define LIGHT_SECURITY_3 0xAB
 
 /*! TRUE if Out-of-band pairing data is to be sent */
 static const bool_t datcSendOobData = FALSE;
@@ -526,7 +532,8 @@ static void datcPrintScanReport(dmEvt_t *pMsg)
     }
 #endif
 }
-
+char encryptedData[16] = {0x00};
+uint32_t decryptedData[4] = {0x00};
 /*************************************************************************************************/
 /*!
  *  \brief  Handle a scan report.
@@ -555,7 +562,7 @@ static void datcScanReport(dmEvt_t *pMsg)
             /* resolve direct address to see if it's addressed to us */
             AppMasterResolveAddr(pMsg, dbHdl, APP_RESOLVE_DIRECT_RPA);
         } else {
-            connect = TRUE;
+            //connect = TRUE;
         }
     } else if (DM_RAND_ADDR_RPA(pMsg->scanReport.addr, pMsg->scanReport.addrType)) {
         /* if the peer device uses an RPA */
@@ -564,37 +571,50 @@ static void datcScanReport(dmEvt_t *pMsg)
     }
 
     /* find device name */
-    if (!connect && ((pData = DmFindAdType(DM_ADV_TYPE_LOCAL_NAME, pMsg->scanReport.len,
+    if (!connect && ((pData = DmFindAdType(DM_ADV_TYPE_MANUFACTURER, pMsg->scanReport.len,
                                            pMsg->scanReport.pData)) != NULL)) {
-        /* check length and device name */
-        if (pData[DM_AD_LEN_IDX] >= 4 && (pData[DM_AD_DATA_IDX] == 'D') &&
-            (pData[DM_AD_DATA_IDX + 1] == 'A') && (pData[DM_AD_DATA_IDX + 2] == 'T') &&
-            (pData[DM_AD_DATA_IDX + 3] == 'S')) {
-            connect = TRUE;
+        char lightCodes[] = {LIGHT_SECURITY_1, LIGHT_SECURITY_2, LIGHT_SECURITY_3};
+
+        if (strstr(pData, lightCodes)){
+            memcpy(encryptedData, pData+7, sizeof(encryptedData));
+            char* decryptedData = AES128_ECB_dec(encryptedData);
+            uint16_t LightValue = 0x00;
+            if (decryptedData[0] == decryptedData[1]){         // 1 nibble or 2 nibble data -------- [2 Digit number]
+                LightValue = (((decryptedData[0] >> 4) & 0xF) * 10) + (decryptedData[0] & 0xF);
+            }
+            else{
+                if ((decryptedData[0] == 0x10))                // 2 bytes of data [4 digit number [ 1000 to 1023 ] ]
+                    LightValue = (((decryptedData[0] >>4 ) & 0xF) * 1000) + (((decryptedData[0]) & 0xF) * 100) 
+                               + (((decryptedData[1] >>4 ) & 0xF) * 10) + (((decryptedData[1]) & 0xF) * 1);
+                else                                           // 1 byte and 1 nibble data [3 digit number]
+                    LightValue = (((decryptedData[0] >>4 ) & 0xF) * 100) + (((decryptedData[0]) & 0xF) * 10) 
+                               + (((decryptedData[1]) & 0xF) * 1);
+            }
+            APP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);
         }
     }
 
-    if (connect) {
-        datcPrintScanReport(pMsg);
+    // if (connect) {
+    //     datcPrintScanReport(pMsg);
 
-        /* stop scanning and connect */
-        datcCb.autoConnect = FALSE;
-        AppScanStop();
+    //     /* stop scanning and connect */
+    //     datcCb.autoConnect = FALSE;
+    //     AppScanStop();
 
-        /* Store peer information for connect on scan stop */
-        datcConnInfo.addrType = DmHostAddrType(pMsg->scanReport.addrType);
-        memcpy(datcConnInfo.addr, pMsg->scanReport.addr, sizeof(bdAddr_t));
-        datcConnInfo.dbHdl = dbHdl;
-        datcConnInfo.doConnect = TRUE;
-    } else {
-        static int scanReportDownSample = 0;
+    //     /* Store peer information for connect on scan stop */
+    //     datcConnInfo.addrType = DmHostAddrType(pMsg->scanReport.addrType);
+    //     memcpy(datcConnInfo.addr, pMsg->scanReport.addr, sizeof(bdAddr_t));
+    //     datcConnInfo.dbHdl = dbHdl;
+    //     datcConnInfo.doConnect = TRUE;
+    // } else {
+    //     static int scanReportDownSample = 0;
 
-        /* Down sample the number of scan reports we print */
-        if (scanReportDownSample++ == SCAN_REPORT_DOWN_SAMPLE) {
-            scanReportDownSample = 0;
-            datcPrintScanReport(pMsg);
-        }
-    }
+    //     /* Down sample the number of scan reports we print */
+    //     if (scanReportDownSample++ == SCAN_REPORT_DOWN_SAMPLE) {
+    //         scanReportDownSample = 0;
+    //         //datcPrintScanReport(pMsg);
+    //     }
+    // }
 }
 
 /*************************************************************************************************/
