@@ -51,7 +51,7 @@ void Init_max31825(void){
 }
 
 //[Change] - Add description Read the Temp Value 
-float ReadTempVal(void)
+uint16_t ReadTempVal(void)
 {
     int retval = 0;
 

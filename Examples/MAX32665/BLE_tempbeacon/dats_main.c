@@ -124,7 +124,7 @@ static const appSecCfg_t datsSecCfg = {
     FALSE /*! TRUE to initiate security upon connection */
 };
 
-float TempSensorValue = 0;
+uint16_t TempSensorValue = 0;
 wsfHandlerId_t myTimerHandlerId;
 wsfTimer_t myTimer;
 uint32_t delayStart_ms;
@@ -249,7 +249,7 @@ static uint8_t datsScanDataDisc[] = {
 char dataToEncrypt[32] = {0x00};
 void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
-    static uint32_t previousSensorValue = 0;
+    static uint16_t previousSensorValue = 0;
     //Update only if value has changed
     if (TempSensorValue != previousSensorValue){ 
         previousSensorValue = TempSensorValue;
@@ -261,7 +261,7 @@ void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
     WsfTimerStartMs(&myTimer, delayStart_ms);
 }
 
-void updateTempValue(float tmpVal){
+void updateTempValue(uint16_t tmpVal){
     TempSensorValue = tmpVal;
 }
 

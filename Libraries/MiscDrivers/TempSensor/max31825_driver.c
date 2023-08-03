@@ -112,7 +112,7 @@ void Get_Temp(uint16_t num) {
         }
     }
 }
-
+uint16_t curr_temp = 0;
 int ReadScratchPad(void){
     uint8_t buffer[9];
 
@@ -139,9 +139,9 @@ int ReadScratchPad(void){
     }
 
     //Bit formatting 
-    uint16_t curr_temp = (buffer[0] + (buffer[1] << 8));
+    curr_temp = (buffer[0] + (buffer[1] << 8));
 
-    Get_Temp(curr_temp);
+    //Get_Temp(curr_temp);
     
 /*
     //  Check CRC8 of received Temperature 
@@ -220,8 +220,8 @@ int32_t OW_MAX31825_Test(void){
 
 
 //getter function for max31825 temp
-double get_max31825_temp(void){
-    return (double)temp_in_c;
+uint16_t get_max31825_temp(void){
+    return curr_temp;
 }
 
 //Max31825 init

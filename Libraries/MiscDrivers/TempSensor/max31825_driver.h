@@ -62,7 +62,7 @@ int32_t OW_MAX31825_Test(void);
 
 int ReadScratchPad(void);
 
-double get_max31825_temp(void);
+uint16_t get_max31825_temp(void);
 
 int32_t Read_Max31825_temp(void);
 

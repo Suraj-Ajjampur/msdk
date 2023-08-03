@@ -41,6 +41,6 @@
 
 
 void Init_max31825(void);
-float ReadTempVal(void);
+uint16_t ReadTempVal(void);
 
 #endif //EXAMPLES_MAX32665_BLE_TEMPBEACON_TEMP_SENSOR_H

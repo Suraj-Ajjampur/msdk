@@ -3,12 +3,12 @@
 
 void ContinuousTimerHandler(void)
 {
-    static double sensorValue;
+    static uint16_t sensorValue;
     // Clear interrupt
     MXC_TMR_ClearFlags(CONT_TIMER);
     MXC_GPIO_OutToggle(led_pin[0].port, led_pin[0].mask);
     sensorValue = ReadTempVal();
-    printf("Temp Val %f \n\r", sensorValue);
+    printf("Temp Val %u \n\r", sensorValue);
     updateTempValue(sensorValue);
 }
 

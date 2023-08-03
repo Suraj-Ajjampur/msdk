@@ -158,6 +158,10 @@ static const appSecCfg_t datcSecCfg = {
 #define LIGHT_SECURITY_2 0x6F
 #define LIGHT_SECURITY_3 0xAB
 
+#define TEMP_SECURITY_1 0xAA
+#define TEMP_SECURITY_2 0xBB
+#define TEMP_SECURITY_3 0xCC
+
 /*! TRUE if Out-of-band pairing data is to be sent */
 static const bool_t datcSendOobData = FALSE;
 
@@ -532,6 +536,27 @@ static void datcPrintScanReport(dmEvt_t *pMsg)
     }
 #endif
 }
+
+int temp_in_c;
+
+void Get_Temp(uint16_t num) {
+
+    int temp_data_format_1[] = {
+        0, 0, 0, 0, 1, 2, 4, 8, 16, 32, 64 //Add signed bit values further here.
+    };
+    //Reset value of temp in c as 0
+    temp_in_c = 0;
+    int num_bits = sizeof(num) * 8;
+    
+    for (int i = 0; i < num_bits; i++) {
+        if ((num >> i) & 1) {
+            temp_in_c = temp_in_c + temp_data_format_1[i];
+            //APP_TRACE_INFO2("Bit at position %d is set - float  value - %d \n", i, temp_data_format_1[i]);
+        }
+    }
+}
+
+
 char encryptedData[16] = {0x00};
 uint32_t decryptedData[4] = {0x00};
 /*************************************************************************************************/
@@ -574,8 +599,9 @@ static void datcScanReport(dmEvt_t *pMsg)
     if (!connect && ((pData = DmFindAdType(DM_ADV_TYPE_MANUFACTURER, pMsg->scanReport.len,
                                            pMsg->scanReport.pData)) != NULL)) {
         char lightCodes[] = {LIGHT_SECURITY_1, LIGHT_SECURITY_2, LIGHT_SECURITY_3};
+        char tempCodes[] = {TEMP_SECURITY_1, TEMP_SECURITY_2, TEMP_SECURITY_3};
 
-        if (strstr(pData, lightCodes)){
+       if (strstr(pData, lightCodes)){
             memcpy(encryptedData, pData+7, sizeof(encryptedData));
             char* decryptedData = AES128_ECB_dec(encryptedData);
             uint16_t LightValue = 0x00;
@@ -591,6 +617,26 @@ static void datcScanReport(dmEvt_t *pMsg)
                                + (((decryptedData[1]) & 0xF) * 1);
             }
             APP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);
+        }        
+        if (strstr(pData, tempCodes)){
+            // memcpy(encryptedData, pData+7, sizeof(encryptedData));
+            // char* decryptedData = AES128_ECB_dec(encryptedData);
+            // uint16_t LightValue = 0x00;
+            // if (decryptedData[0] == decryptedData[1]){         // 1 nibble or 2 nibble data -------- [2 Digit number]
+            //     LightValue = (((decryptedData[0] >> 4) & 0xF) * 10) + (decryptedData[0] & 0xF);
+            // }
+            // else{
+            //     if ((decryptedData[0] == 0x10))                // 2 bytes of data [4 digit number [ 1000 to 1023 ] ]
+            //         LightValue = (((decryptedData[0] >>4 ) & 0xF) * 1000) + (((decryptedData[0]) & 0xF) * 100) 
+            //                    + (((decryptedData[1] >>4 ) & 0xF) * 10) + (((decryptedData[1]) & 0xF) * 1);
+            //     else                                           // 1 byte and 1 nibble data [3 digit number]
+            //         LightValue = (((decryptedData[0] >>4 ) & 0xF) * 100) + (((decryptedData[0]) & 0xF) * 10) 
+            //                    + (((decryptedData[1]) & 0xF) * 1);
+            // }
+            // PP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);A
+            uint16_t tempValue = *((uint16_t*)(pData+7));
+            Get_Temp(tempValue);
+            APP_TRACE_INFO1("Temp Sensor Value in the client side - %d\n\n\r", temp_in_c);
         }
     }
 
