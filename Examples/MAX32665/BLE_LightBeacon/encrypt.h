@@ -10,5 +10,4 @@
 #include "tpu.h"
 
 char* AES128_ECB_enc(char* inputData);
-char* AES128_ECB_dec(char* inputData);
 #endif // __ENCRYPT_MODULE_FOR_LIGHT_SENSOR__

@@ -245,49 +245,17 @@ static const uint8_t datsScanDataDisc[] = {
   'H',
   'T'
 };
-char dataToEncrypt[32] = {0x00};
+
+char dataToEncrypt[16] = {0x00};
 void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
     static uint32_t previousSensorValue = 0;
-    //static bool firstTime = true;
-    if ((lightSensorValue != previousSensorValue)){// && (firstTime)){
-        //firstTime = false;
+    if ((lightSensorValue != previousSensorValue)){
         previousSensorValue = lightSensorValue;
-        //sprintf();
-        APP_TRACE_INFO1("L - 0x%x ", lightSensorValue);
-        APP_TRACE_INFO1("L - %d ", lightSensorValue);
         sprintf(dataToEncrypt, "%u", lightSensorValue);
-        // //dataToEncrypt[0] = lightSensorValue;
-        APP_TRACE_INFO1("DE - 0x%x ",dataToEncrypt[0]);
-        APP_TRACE_INFO1("DE - 0x%x ",dataToEncrypt[1]);
-        APP_TRACE_INFO1("DE - 0x%x ",dataToEncrypt[2]);
-        APP_TRACE_INFO1("DE - 0x%x ",dataToEncrypt[3]);
 
         char* encryptedData = AES128_ECB_enc(dataToEncrypt);
-        APP_TRACE_INFO1("E - 0x%x ",encryptedData[0]);
-        APP_TRACE_INFO1("E - 0x%x ",encryptedData[1]);
-        APP_TRACE_INFO1("E - 0x%x ",encryptedData[2]);
-        APP_TRACE_INFO1("E - 0x%x ",encryptedData[3]);
-        char* outtt = AES128_ECB_dec(encryptedData);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[0]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[1]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[2]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[3]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[4]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[5]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[6]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[7]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[8]);
-        APP_TRACE_INFO1("D - 0x%x ",outtt[9]);
-        // memcpy(dataToEncrypt, &lightSensorValue, sizeof(lightSensorValue));
-        // for (int i=0; i<sizeof(dataToEncrypt)/sizeof(dataToEncrypt[0]); i++){
-        //     APP_TRACE_INFO2("%d - 0x%x ",i,dataToEncrypt[i]);
-        // }
-        // APP_TRACE_INFO0("\n\n ");
         memcpy(&datsAdvDataDiscNew[5], encryptedData, sizeof(datsAdvDataDiscNew)-5);
-        // for (int i=0; i<sizeof(datsAdvDataDiscNew)/sizeof(datsAdvDataDiscNew[0]); i++){
-        //    APP_TRACE_INFO2("%d - 0x%x ",i,datsAdvDataDiscNew[i]);
-        // }
         bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
             (uint8_t *) datsAdvDataDiscNew);
     }

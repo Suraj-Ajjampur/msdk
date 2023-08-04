@@ -51,6 +51,10 @@
 #include "tmr.h"
 #include "sdsc_api.h"
 #include "decrypt.h"
+#include "mxc_device.h"
+#include "led.h"
+#include "board.h"
+
 /**************************************************************************************************
 Macros
 **************************************************************************************************/
@@ -604,36 +608,14 @@ static void datcScanReport(dmEvt_t *pMsg)
        if (strstr(pData, lightCodes)){
             memcpy(encryptedData, pData+7, sizeof(encryptedData));
             char* decryptedData = AES128_ECB_dec(encryptedData);
-            uint16_t LightValue = 0x00;
-            if (decryptedData[0] == decryptedData[1]){         // 1 nibble or 2 nibble data -------- [2 Digit number]
-                LightValue = (((decryptedData[0] >> 4) & 0xF) * 10) + (decryptedData[0] & 0xF);
-            }
-            else{
-                if ((decryptedData[0] == 0x10))                // 2 bytes of data [4 digit number [ 1000 to 1023 ] ]
-                    LightValue = (((decryptedData[0] >>4 ) & 0xF) * 1000) + (((decryptedData[0]) & 0xF) * 100) 
-                               + (((decryptedData[1] >>4 ) & 0xF) * 10) + (((decryptedData[1]) & 0xF) * 1);
-                else                                           // 1 byte and 1 nibble data [3 digit number]
-                    LightValue = (((decryptedData[0] >>4 ) & 0xF) * 100) + (((decryptedData[0]) & 0xF) * 10) 
-                               + (((decryptedData[1]) & 0xF) * 1);
-            }
+            uint32_t LightValue = atoi(decryptedData);
+            if (LightValue > 700)
+                LED_On(LED1);
+            else
+                LED_Off(LED1);
             APP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);
         }        
         if (strstr(pData, tempCodes)){
-            // memcpy(encryptedData, pData+7, sizeof(encryptedData));
-            // char* decryptedData = AES128_ECB_dec(encryptedData);
-            // uint16_t LightValue = 0x00;
-            // if (decryptedData[0] == decryptedData[1]){         // 1 nibble or 2 nibble data -------- [2 Digit number]
-            //     LightValue = (((decryptedData[0] >> 4) & 0xF) * 10) + (decryptedData[0] & 0xF);
-            // }
-            // else{
-            //     if ((decryptedData[0] == 0x10))                // 2 bytes of data [4 digit number [ 1000 to 1023 ] ]
-            //         LightValue = (((decryptedData[0] >>4 ) & 0xF) * 1000) + (((decryptedData[0]) & 0xF) * 100) 
-            //                    + (((decryptedData[1] >>4 ) & 0xF) * 10) + (((decryptedData[1]) & 0xF) * 1);
-            //     else                                           // 1 byte and 1 nibble data [3 digit number]
-            //         LightValue = (((decryptedData[0] >>4 ) & 0xF) * 100) + (((decryptedData[0]) & 0xF) * 10) 
-            //                    + (((decryptedData[1]) & 0xF) * 1);
-            // }
-            // PP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);A
             uint16_t tempValue = *((uint16_t*)(pData+7));
             Get_Temp(tempValue);
             APP_TRACE_INFO1("Temp Sensor Value in the client side - %d\n\n\r", temp_in_c);
