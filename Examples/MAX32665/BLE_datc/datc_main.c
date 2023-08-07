@@ -55,6 +55,112 @@
 #include "led.h"
 #include "board.h"
 
+/****************************************LCD DISPLAY STUFF*********************************/
+#define LV_CONF_INCLUDE_SIMPLE
+
+#include "lv_conf.h"
+#include "lvgl.h"
+
+#include "sharp_mip.h"
+#include "test_screen.h"
+#include "resources/ecg_data.h"
+
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+#include "lvgl.h"
+#else
+#include "lvgl/lvgl.h"
+#endif
+
+#ifndef LV_ATTRIBUTE_MEM_ALIGN
+#define LV_ATTRIBUTE_MEM_ALIGN
+#endif
+
+#ifndef LV_ATTRIBUTE_IMG_ADI_LOGO
+#define LV_ATTRIBUTE_IMG_ADI_LOGO
+#endif
+
+#include "test_screen.h"
+
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_ADI_LOGO uint8_t
+    adi_logo_map[] = {
+        0xff, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff,
+        0xfc, 0xff, 0xff, 0xff, 0xfc, 0xfc, 0xff, 0xff, 0xfc, 0xfc, 0x3f, 0xff, 0xfc, 0xfc, 0x1f,
+        0xff, 0xfc, 0xfc, 0x07, 0xff, 0xfc, 0xfc, 0x01, 0xff, 0xfc, 0xfc, 0x00, 0x7f, 0xfc, 0xfc,
+        0x00, 0x3f, 0xfc, 0xfc, 0x00, 0x0f, 0xfc, 0xfc, 0x00, 0x03, 0xfc, 0xfc, 0x00, 0x00, 0xfc,
+        0xfc, 0x00, 0x00, 0xfc, 0xfc, 0x00, 0x01, 0xfc, 0xfc, 0x00, 0x07, 0xfc, 0xfc, 0x00, 0x1f,
+        0xfc, 0xfc, 0x00, 0x7f, 0xfc, 0xfc, 0x00, 0xff, 0xfc, 0xfc, 0x03, 0xff, 0xfc, 0xfc, 0x0f,
+        0xff, 0xfc, 0xfc, 0x1f, 0xff, 0xfc, 0xfc, 0x7f, 0xff, 0xfc, 0xfd, 0xff, 0xff, 0xfc, 0xff,
+        0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xfc,
+    };
+
+const lv_img_dsc_t adi_logo = {
+    .header.cf = LV_IMG_CF_ALPHA_1BIT,
+    .header.always_zero = 0,
+    .header.reserved = 0,
+    .header.w = 30,
+    .header.h = 30,
+    .data_size = 120,
+    .data = adi_logo_map,
+};
+/***** Definitions *****/
+#define DISPLAY_HOR_RES (128)
+#define DISPLAY_VER_RES (128)
+
+// LVGL Definitions
+#define DRAW_BUF_SIZE BUF_SIZE(DISPLAY_HOR_RES, DISPLAY_VER_RES)
+#define TEXT_BOUNCE_DELAY 10
+
+// LVGL DISPLAY DRIVER VARIABLES
+static lv_disp_draw_buf_t disp_buf;
+static lv_disp_drv_t disp_drv;
+static lv_disp_t *disp;
+static lv_color_t disp_buf1[DRAW_BUF_SIZE];
+
+extern sharp_mip_dev ls013b7dh03_controller;
+
+//============================================================================
+static void set_px_cb(struct _lv_disp_drv_t *disp_drv, uint8_t *buf, lv_coord_t buf_w, lv_coord_t x,
+                      lv_coord_t y, lv_color_t color, lv_opa_t opa)
+{
+    sharp_mip_set_buffer_pixel_util(&ls013b7dh03_controller, buf, buf_w, x, y, color.full,
+                                    (LV_COLOR_SCREEN_TRANSP != opa));
+}
+
+static void flush_cb(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
+{
+    sharp_mip_flush_area(&ls013b7dh03_controller, (display_area_t *)area, (uint8_t *)color_p);
+    lv_disp_flush_ready(disp_drv);
+}
+
+static void rounder_cb(struct _lv_disp_drv_t *disp_drv, lv_area_t *area)
+{
+    area->x1 = 0;
+    area->x2 = DISPLAY_HOR_RES - 1;
+}
+
+//============================================================================
+void lvgl_setup()
+{
+    /* LittlevGL setup */
+    lv_init();
+
+    /* Initialize `disp_buf` with the buffer(s). */
+    lv_disp_draw_buf_init(&disp_buf, disp_buf1, NULL, DRAW_BUF_SIZE);
+
+    /* Display driver setup */
+    lv_disp_drv_init(&disp_drv);
+    disp_drv.draw_buf = &disp_buf;
+    disp_drv.flush_cb = flush_cb;
+    disp_drv.set_px_cb = set_px_cb;
+    disp_drv.rounder_cb = rounder_cb;
+    disp_drv.hor_res = DISPLAY_HOR_RES;
+    disp_drv.ver_res = DISPLAY_VER_RES;
+    disp = lv_disp_drv_register(&disp_drv);
+
+    lv_theme_t *th = lv_theme_mono_init(disp, FALSE, LV_FONT_DEFAULT);
+    lv_disp_set_theme(disp, th);
+}
+
 /**************************************************************************************************
 Macros
 **************************************************************************************************/
@@ -305,6 +411,48 @@ static const attcDiscCfg_t datcDiscCfgList[] = {
     { datcCccNtfVal, sizeof(datcCccNtfVal), (SEC_DAT_CCC_HDL_IDX + DATC_DISC_SDS_START) },
 };
 
+wsfHandlerId_t myTimerHandlerId;
+wsfTimer_t myTimer;
+uint32_t delayStart_ms;
+
+uint32_t last_tick;
+int count = 0;
+int ecg_data_size;
+
+void Init_LCD(void){
+    //Initialize the LCD
+    sharp_mip_init(&ls013b7dh03_controller);
+
+    lvgl_setup();
+
+    test_screen();
+
+    last_tick = lv_tick_get();
+
+    ecg_data_size = sizeof(ecg_sample) / sizeof(ecg_sample[0]);
+}
+
+void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
+
+    lv_tick_inc(1);
+    //temp_in_c++;
+
+    delayStart_ms = 10;
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
+
+
+void WsfTimerInit_LCDUpdate(){
+    myTimerHandlerId = WsfOsSetNextHandler(myTimerHandlerCB);
+    myTimer.handlerId = myTimerHandlerId;
+
+    WsfTimerStartMs(&myTimer, delayStart_ms);
+}
+
+char dataToEncrypt[32] = {0x00};
+
+
+
 /* Characteristic configuration list length */
 #define DATC_DISC_CFG_LIST_LEN (sizeof(datcDiscCfgList) / sizeof(attcDiscCfg_t))
 
@@ -541,7 +689,7 @@ static void datcPrintScanReport(dmEvt_t *pMsg)
 #endif
 }
 
-int temp_in_c;
+int temp_in_c = 88;
 
 void Get_Temp(uint16_t num) {
 
@@ -619,6 +767,12 @@ static void datcScanReport(dmEvt_t *pMsg)
             uint16_t tempValue = *((uint16_t*)(pData+7));
             Get_Temp(tempValue);
             APP_TRACE_INFO1("Temp Sensor Value in the client side - %d\n\n\r", temp_in_c);
+        }
+        if ((last_tick + 10) < lv_tick_get()) {
+        /* The timing is not critical but should be between 1..10 ms */
+        update_screen();
+        lv_task_handler();
+        last_tick = lv_tick_get();
         }
     }
 
@@ -1446,3 +1600,4 @@ void DatcStart(void)
     /* Reset the device */
     DmDevReset();
 }
+

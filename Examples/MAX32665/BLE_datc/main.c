@@ -62,6 +62,7 @@
 #include "datc_api.h"
 #include "app_ui.h"
 
+
 /**************************************************************************************************
   Macros
 **************************************************************************************************/
@@ -73,6 +74,55 @@
 /**************************************************************************************************
   Global Variables
 **************************************************************************************************/
+/********************   LVGL GLOBALS    **************************************/
+
+
+/*******************TIMER STUFFF **************************************/
+
+
+/**************************************************************************************************
+  Macros
+**************************************************************************************************/
+#define INTERVAL_TIME_CONT 1 // (s) will toggle after every interval
+#define CONT_TIMER MXC_TMR1 // Can be MXC_TMR0 through MXC_TMR5
+#define CONT_TIMER_IRQn TMR1_IRQn
+
+extern int temp_in_c;
+
+// void ContinuousTimerHandler(void)
+// {
+//     lv_tick_inc(1);
+
+//     temp_in_c++;
+//     if ((last_tick + 10) < lv_tick_get()) {
+//         /* The timing is not critical but should be between 1..10 ms */
+//         lv_task_handler();
+//         last_tick = lv_tick_get();
+//     }
+//     update_screen();
+// }
+
+// void ContinuousTimer(void)
+// {
+//     // Declare variables
+//     mxc_tmr_cfg_t tmr;
+//     uint32_t periodTicks = PeripheralClock / 4 * INTERVAL_TIME_CONT;
+    
+//     printf("%u",periodTicks);
+//     MXC_TMR_Shutdown(CONT_TIMER);
+
+//     tmr.pres = TMR_PRES_4;
+//     tmr.mode = TMR_MODE_CONTINUOUS;
+//     tmr.cmp_cnt = periodTicks; //SystemCoreClock*(1/interval_time);
+//     tmr.pol = 0;
+
+//     MXC_TMR_Init(CONT_TIMER, &tmr);
+
+//     MXC_TMR_Start(CONT_TIMER);
+
+//     printf("Continuous timer started.\n\n");
+// }
+
 
 /*! \brief  Pool runtime configuration. */
 static wsfBufPoolDesc_t mainPoolDesc[] = { { 16, 8 }, { 32, 4 }, { 192, 8 }, { 256, 16 } };
@@ -193,6 +243,12 @@ void setAdvTxPower(void)
 /*************************************************************************************************/
 int main(void)
 {
+
+    Init_LCD();
+    /* Configure Timer */
+    // MXC_NVIC_SetVector(CONT_TIMER_IRQn, ContinuousTimerHandler);
+    // NVIC_EnableIRQ(CONT_TIMER_IRQn);
+    // ContinuousTimer();
 #if defined(HCI_TR_EXACTLE) && (HCI_TR_EXACTLE == 1)
     /* Configurations must be persistent. */
     static BbRtCfg_t mainBbRtCfg;
@@ -276,8 +332,10 @@ int main(void)
     StackInitDatc();
     DatcStart();
 
+    WsfTimerInit_LCDUpdate();
     WsfOsEnterMainLoop();
 
     /* Does not return. */
     return 0;
 }
+

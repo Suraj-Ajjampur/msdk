@@ -19,6 +19,14 @@ LIB_CORDIO = 1
 INIT_PERIPHERAL = 0
 INIT_CENTRAL = 1
 
+#Enable LVGL Library 
+LIB_LVGL = 1
+
+# IPATH += $(MAXIM_PATH)/Libraries/LVGL
+# VPATH += $(MAXIM_PATH)/Libraries/LVGL
+
+VPATH += resourses
+
 # TRACE option
 # Set to 0 to disable
 # Set to 1 to enable serial port trace messages

@@ -65,6 +65,10 @@ void DatcHandlerInit(wsfHandlerId_t handlerId);
 /*************************************************************************************************/
 void DatcHandler(wsfEventMask_t event, wsfMsgHdr_t *pMsg);
 
+void Init_LCD(void);
+
+void WsfTimerInit_LCDUpdate();
+
 #ifdef __cplusplus
 };
 #endif
