@@ -258,6 +258,7 @@ void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
         memcpy(&datsAdvDataDiscNew[5], encryptedData, sizeof(datsAdvDataDiscNew)-5);
         bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
             (uint8_t *) datsAdvDataDiscNew);
+        APP_TRACE_INFO1("data sent: %s",retvalue?"True":"False");
     }
     delayStart_ms = 500;
     WsfTimerStartMs(&myTimer, delayStart_ms);

@@ -275,10 +275,8 @@ int main(void)
     /* Initialize Sensor */
     temt6000_Init();
 
-    /* Configure Timer */
-    MXC_NVIC_SetVector(CONT_TIMER_IRQn, ContinuousTimerHandler);
-    NVIC_EnableIRQ(CONT_TIMER_IRQn);
-    ContinuousTimer();
+    /* Initialize Timer */
+    ContinuousTimerInit();
 
     /* Initialize DATS Stack */
     StackInitDats();
