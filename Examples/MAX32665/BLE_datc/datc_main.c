@@ -435,9 +435,7 @@ void Init_LCD(void){
 void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
     lv_tick_inc(1);
-    //temp_in_c++;
-
-    delayStart_ms = 10;
+    delayStart_ms = 1;
     WsfTimerStartMs(&myTimer, delayStart_ms);
 }
 
@@ -448,10 +446,6 @@ void WsfTimerInit_LCDUpdate(){
 
     WsfTimerStartMs(&myTimer, delayStart_ms);
 }
-
-char dataToEncrypt[32] = {0x00};
-
-
 
 /* Characteristic configuration list length */
 #define DATC_DISC_CFG_LIST_LEN (sizeof(datcDiscCfgList) / sizeof(attcDiscCfg_t))

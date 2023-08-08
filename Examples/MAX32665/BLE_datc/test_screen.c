@@ -103,15 +103,12 @@ void update_screen(void){
     lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label1, LV_ALIGN_CENTER, 10, -45);
 
-
     char Temp_str[5] = "TEMP";
-    
+
     temp = lv_label_create(lv_scr_act());
     lv_label_set_text(temp, Temp_str);
     lv_obj_set_style_text_align(temp, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(temp, LV_ALIGN_CENTER, 0, 0);
-
-    lv_obj_clean(temp);
 
     int length = snprintf( NULL, 0, "%d", temp_in_c );
     char* str = (char *)malloc( length + 1 );
