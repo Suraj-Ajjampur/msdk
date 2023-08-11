@@ -45,6 +45,7 @@ lv_chart_series_t *ser;
 
 //Fetch decrypted temperature value
 extern int temp_in_c;
+extern uint32_t LightValue;
 
 /**
  * Display 1000 data points with zooming and scrolling.
@@ -89,6 +90,25 @@ void test_screen(void)
     free(str);
 }
 
+void update_sensor_value(char* text_str, int value, int horText, int horValue){
+
+    temp = lv_label_create(lv_scr_act());
+    lv_label_set_text(temp, text_str);
+    lv_obj_set_style_text_align(temp, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(temp, LV_ALIGN_CENTER, 0, horText);
+
+    int length = snprintf( NULL, 0, "%d", value );
+    char* str = (char *)malloc( length + 1 );
+    snprintf( str, length + 1, "%d", value );
+
+    val = lv_label_create(lv_scr_act());
+    lv_label_set_text(val, str);
+    lv_obj_set_style_text_align(val, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(val, LV_ALIGN_CENTER, 0, horValue);
+    free(str);
+
+}
+
 void update_screen(void){
 
     lv_obj_clean(lv_scr_act()); //Clear the screen
@@ -102,22 +122,9 @@ void update_screen(void){
     lv_label_set_text(label1, "Analog\nDevices");
     lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(label1, LV_ALIGN_CENTER, 10, -45);
+    char temp_str[5] = "TEMP";
+    char light_str[6] = "LIGHT";
+    update_sensor_value(light_str, LightValue, -10, 5);
+    update_sensor_value(temp_str, temp_in_c, 20, 35);
 
-    char Temp_str[5] = "TEMP";
-
-    temp = lv_label_create(lv_scr_act());
-    lv_label_set_text(temp, Temp_str);
-    lv_obj_set_style_text_align(temp, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(temp, LV_ALIGN_CENTER, 0, 0);
-
-    int length = snprintf( NULL, 0, "%d", temp_in_c );
-    char* str = (char *)malloc( length + 1 );
-    snprintf( str, length + 1, "%d", temp_in_c );
- 
-    val = lv_label_create(lv_scr_act());
-    lv_label_set_text(val, str);
-    lv_obj_set_style_text_align(val, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(val, LV_ALIGN_CENTER, 0, 20);
-
-    free(str);
 }

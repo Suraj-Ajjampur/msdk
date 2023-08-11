@@ -54,6 +54,7 @@
 #include "mxc_device.h"
 #include "led.h"
 #include "board.h"
+#include "stdlib.h"
 
 /****************************************LCD DISPLAY STUFF*********************************/
 #define LV_CONF_INCLUDE_SIMPLE
@@ -272,6 +273,8 @@ static const appSecCfg_t datcSecCfg = {
 #define TEMP_SECURITY_2 0xBB
 #define TEMP_SECURITY_3 0xCC
 
+#define DATA_POSITION 7
+#define LIGHT_THRESHOLD 700
 /*! TRUE if Out-of-band pairing data is to be sent */
 static const bool_t datcSendOobData = FALSE;
 
@@ -684,7 +687,7 @@ static void datcPrintScanReport(dmEvt_t *pMsg)
 }
 
 int temp_in_c = 88;
-
+uint32_t LightValue;
 void Get_Temp(uint16_t num) {
 
     int temp_data_format_1[] = {
@@ -747,26 +750,26 @@ static void datcScanReport(dmEvt_t *pMsg)
         char lightCodes[] = {LIGHT_SECURITY_1, LIGHT_SECURITY_2, LIGHT_SECURITY_3};
         char tempCodes[] = {TEMP_SECURITY_1, TEMP_SECURITY_2, TEMP_SECURITY_3};
 
-       if (strstr(pData, lightCodes)){
-            memcpy(encryptedData, pData+7, sizeof(encryptedData));
+       if (strstr((char*)pData, lightCodes)){
+            memcpy(encryptedData, pData+DATA_POSITION, sizeof(encryptedData));
             char* decryptedData = AES128_ECB_dec(encryptedData);
-            uint32_t LightValue = atoi(decryptedData);
-            if (LightValue > 700)
+            LightValue = atoi(decryptedData);
+            if (LightValue > LIGHT_THRESHOLD)
                 LED_On(LED1);
             else
                 LED_Off(LED1);
             APP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);
         }        
-        if (strstr(pData, tempCodes)){
-            uint16_t tempValue = *((uint16_t*)(pData+7));
+        if (strstr((char*)pData, tempCodes)){
+            uint16_t tempValue = *((uint16_t*)(pData+DATA_POSITION));
             Get_Temp(tempValue);
             APP_TRACE_INFO1("Temp Sensor Value in the client side - %d\n\n\r", temp_in_c);
         }
         if ((last_tick + 10) < lv_tick_get()) {
-        /* The timing is not critical but should be between 1..10 ms */
-        update_screen();
-        lv_task_handler();
-        last_tick = lv_tick_get();
+            /* The timing is not critical but should be between 1..10 ms */
+            update_screen();
+            lv_task_handler();
+            last_tick = lv_tick_get();
         }
     }
 
