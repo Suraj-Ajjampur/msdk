@@ -34,9 +34,24 @@
 #include "max31825_driver.h"
 
 
+#define NORMAL_DATA_FORMAT 11 
+#define EXTENDED_DATA_FORMAT 12 
 
+#define DATA_FORMAT NORMAL_DATA_FORMAT
+
+#define SIGNED_BIT_MASK  (31 << DATA_FORMAT)
+
+
+#define INTERRUPT_MODE          1
+#define COMPARATOR_MODE         0
 // Local global variables
 uint8_t utilcrc8;
+float temp_in_c = 0;
+scratchpad_t control_regs;
+
+/** Lookup table that is accessed directly for any 8-bit value currently
+  * stored in the CRC register and any 8-bit pattern of new data
+*/
 static uint8_t dscrc_table[] = {
     0,   94,  188, 226, 97,  63,  221, 131, 194, 156, 126, 32,  163, 253, 31,  65,  157, 195, 33,
     127, 252, 162, 64,  30,  95,  1,   227, 189, 62,  96,  130, 220, 35,  125, 159, 193, 66,  28,
@@ -54,39 +69,45 @@ static uint8_t dscrc_table[] = {
     247, 182, 232, 10,  84,  215, 137, 107, 53
 };
 
-//--------------------------------------------------------------------------
-// Reset crc8 to the value passed in
-//
-// 'portnum'  - number 0 to MAX_PORTNUM-1.  This number is provided to
-//              indicate the symbolic port number.
-// 'reset'    - data to set crc8 to
-//
+/** Reset crc8 to the value passed in
+ * 
+ * @param reset data to set crc8 to
+*/
 void setcrc8(uint8_t reset)
 {
     utilcrc8 = reset;
     return;
 }
 
-//--------------------------------------------------------------------------
-// Update the Dallas Semiconductor One Wire CRC (utilcrc8) from the global
-// variable utilcrc8 and the argument.
-//
-// 'portnum'  - number 0 to MAX_PORTNUM-1.  This number is provided to
-//              indicate the symbolic port number.
-// 'x'        - data byte to calculate the 8 bit crc from
-//
-// Returns: the updated utilcrc8.
-//
+/** Update the Dallas Semiconductor One Wire CRC (utilcrc8) from the global variable utilcrc8 and the argument.
+ * 
+ * @param int data byte to calculate the 8-bit crc from
+ * 
+ * @return updated utilcrc8
+*/
 uint8_t docrc8(uint8_t x)
 {
     utilcrc8 = dscrc_table[utilcrc8 ^ x];
     return utilcrc8;
 }
 
+#if (DATA_FORMAT == NORMAL_DATA_FORMAT)
+/** Normal_data format produces temperature data upto 128C - 1 LSB
+ * 
+*/
 static float temp_data_format[] = {
-    0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64 //Add signed bit values further here.
+    0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32
 };
 
+#else
+
+/** Extended_data format produces temperature data up to and beyond 145C operating limit
+*/
+static float temp_data_format[] = {
+    0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64 
+};
+
+#endif
 
 /*
 
@@ -95,8 +116,6 @@ Most common CRC errors in 1-wire devices.
 2. All double-bit errors anywhere within the 64-bit number.
 3. Any cluster of errors that can be contained within an 8-bit "window" (1-8 bits incorrect).
 4. Most larger clusters of errors.
-
-
 */
 
 
@@ -161,8 +180,10 @@ void print_binary(uint16_t num) {
     printf("\n");
 }
 
-
-float temp_in_c = 0;
+/** Gets the value of the raw temperature value in celcius
+ * 
+ * @param num 
+*/
 void Get_Temp(uint16_t num) {
     //Reset value of temp in c as 0
     temp_in_c = 0;
@@ -176,6 +197,7 @@ void Get_Temp(uint16_t num) {
     }
 }
 uint16_t curr_temp = 0;
+
 int ReadScratchPad(void){
     uint8_t buffer[9];
 
@@ -224,10 +246,11 @@ int ReadScratchPad(void){
 
 }
 
+// int Write_Scratchpad(uint8_t *data_buffer,uint8_t config,int high_threshhold,int low_threshold);
+
 int Write_Scratchpad(uint8_t *data_buffer){
 
     uint8_t cmd_buffer[1];
-    //uint8_t data_buffer[5]; //6 in all cases
 
     /* Error if presence pulse not detected. */
     if (MXC_OWM_Reset() == 0) {
@@ -246,8 +269,7 @@ int Write_Scratchpad(uint8_t *data_buffer){
         return -88;
     }
 
-    return 0;
-    
+    return 0;    
 }
 
 int32_t OW_MAX31825_Test(void){
@@ -287,10 +309,6 @@ uint16_t get_max31825_temp(void){
     return curr_temp;
 }
 
-//Max31825 init
-
-//Read temp - Sequence of commands send to continously read the temperature.
-
 int32_t Read_Max31825_temp(void){
 
     int32_t err;
@@ -329,6 +347,116 @@ int DetectAddress(void){
     return 0;
 }
 
+/** Selects the rate for automatic continuous conversions, Apply 
+ *  only to external power used. 
+ * 
+ *  @param rate conversion rate required
+*/
+void Set_conversion_rate(uint8_t rate){
+
+    //Clear the registers
+    control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_CONV_RATE_MASK);
+
+    //Set the conversion rate register
+    control_regs.config |= rate;
+}
+
+
+/** Load the 
+ * 
+*/
+
+
+/** Sets the High Threshold to trigger an alarm
+ * 
+ * @param high_temp Temperature to set 
+*/
+void Set_High_Alarm_Threshold(float high_temp) {
+    
+    //Reset the value of the register
+    control_regs.TH = 0;
+
+    //Check for negative value
+    if (high_temp < 0){
+        //Set the signed bits
+        control_regs.TL |= (SIGNED_BIT_MASK);
+        //Change the sign of the temp value
+        high_temp = -high_temp;
+    }
+    
+    for (int i = 0; i < NORMAL_DATA_FORMAT; i++) {
+        if (high_temp >= temp_data_format[i]) {
+            high_temp -= temp_data_format[i];
+            control_regs.TH |= (1 << i);
+        }
+    }
+}
+
+/** Sets the Low Threshold to trigger an alarm in the control register structure 
+ * 
+ * @param low_temp Temperature to set 
+*/
+void Set_Low_Alarm_Threshold(float low_temp) {
+    
+    //Reset the value of the register
+    control_regs.TL = 0;
+
+    //Check for negative value
+    if (low_temp < 0){
+        //Set the signed bits
+        control_regs.TL |= (SIGNED_BIT_MASK);
+        //Change the sign of the temp value
+        low_temp = -low_temp;
+    }
+    
+    for (int i = 0; i < NORMAL_DATA_FORMAT; i++) {
+        if (low_temp >= temp_data_format[i]) {
+            low_temp -= temp_data_format[i];
+            control_regs.TL |= (1 << i);
+        }
+    }
+}
+
+/** The configuration register provides control over several operating parameters, including data format, 
+ * conversion resolution, the ALARM output mode, and the continuous conversion rate.
+ * 
+*/
+void MXC_Config_MAX31825(uint8_t resolution_bits, uint8_t interrupt,uint8_t conv_rate){
+
+//Logic for the format of operations
+#if (DATA_FORMAT == NORMAL_DATA_FORMAT)
+
+control_regs.config |= (MXC_MAX31825_CONFIG_REGISTER_FORMAT);
+#else
+control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_FORMAT);
+#endif
+
+    //Set_resolution_bits(resolution_bits);
+
+
+
+    Set_conversion_rate(conv_rate);
+
+}
+
+// void set_comp_int(uint8_t){
+//     //Clear interrupt bits
+//     control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_COMPT_INT);
+
+//     if (interrupt == 1){
+//         control_regs.config |= MXC_MAX31825_CONFIG_REGISTER_COMPT_INT;
+//     }
+// }
+/** The resolution bits (D6:D5) select the conversion resolution. The conversion time doubles with every bit of increased resolution.
+ * 
+*/
+// Set_resolution_bits(uint8_t resolution_bits){
+//     control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_RESOLUTION_MASK);
+
+//     control_regs.config |= (MXC_MAX31825_RESOLUTION_12_BITS);
+// }
+
+
 int OW_MAX31825_Test1(void){
     int32_t err;
 
@@ -341,7 +469,14 @@ int OW_MAX31825_Test1(void){
         return err;
     }
 
+
+    // Set_High_Alarm_Threshold(28.0);
+
+    // Set_Low_Alarm_Threshold(20.0);
+
+    //MXC_Config_MAX31825(MXC_MAX31825_RESOLUTION_12_BITS,INTERRUPT_MODE);
     uint8_t buf[] = {0x75,0x07,0xFF,0x90,0xFC}; //Writing into config bits
+
     err = Write_Scratchpad(buf);
     if ( err != 0){
         return err;
