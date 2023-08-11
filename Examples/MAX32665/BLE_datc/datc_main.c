@@ -761,7 +761,9 @@ static void datcScanReport(dmEvt_t *pMsg)
             APP_TRACE_INFO1("Light Sensor Value in the client side - %d\n\n\r", LightValue);
         }        
         if (strstr((char*)pData, tempCodes)){
-            uint16_t tempValue = *((uint16_t*)(pData+DATA_POSITION));
+            memcpy(encryptedData, pData+DATA_POSITION, sizeof(encryptedData));
+            char* decryptedData = AES128_ECB_dec(encryptedData);
+            uint16_t tempValue = atoi(decryptedData);
             Get_Temp(tempValue);
             APP_TRACE_INFO1("Temp Sensor Value in the client side - %d\n\n\r", temp_in_c);
         }

@@ -246,14 +246,18 @@ static uint8_t datsScanDataDisc[] = {
     'M',
     'P'
 };
-char dataToEncrypt[32] = {0x00};
+char dataToEncrypt[16] = {0x00};
 void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
     static uint16_t previousSensorValue = 0;
     //Update only if value has changed
     if (TempSensorValue != previousSensorValue){ 
         previousSensorValue = TempSensorValue;
-        memcpy(&datsAdvDataDiscNew[5], &TempSensorValue, sizeof(TempSensorValue));
+        sprintf(dataToEncrypt, "%u", TempSensorValue);
+
+        char* encryptedData = AES128_ECB_enc(dataToEncrypt);
+        memcpy(&datsAdvDataDiscNew[5], encryptedData, sizeof(datsAdvDataDiscNew)-5);
+
         bool retvalue = appAdvSetAdValue(DM_ADV_HANDLE_DEFAULT, APP_ADV_DATA_DISCOVERABLE, DM_ADV_TYPE_MANUFACTURER, sizeof(datsAdvDataDiscNew),
             (uint8_t *) datsAdvDataDiscNew);
     }
