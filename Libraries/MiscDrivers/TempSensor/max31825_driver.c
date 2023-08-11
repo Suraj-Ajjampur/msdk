@@ -439,22 +439,22 @@ control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_FORMAT);
 
 }
 
-// void set_comp_int(uint8_t){
-//     //Clear interrupt bits
-//     control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_COMPT_INT);
+void set_comp_int(uint8_t interrupt){
+    //Clear interrupt bits
+    control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_COMPT_INT);
 
-//     if (interrupt == 1){
-//         control_regs.config |= MXC_MAX31825_CONFIG_REGISTER_COMPT_INT;
-//     }
-// }
+    if (interrupt == 1){
+        control_regs.config |= MXC_MAX31825_CONFIG_REGISTER_COMPT_INT;
+    }
+}
 /** The resolution bits (D6:D5) select the conversion resolution. The conversion time doubles with every bit of increased resolution.
  * 
 */
-// Set_resolution_bits(uint8_t resolution_bits){
-//     control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_RESOLUTION_MASK);
+Set_resolution_bits(uint8_t resolution_bits){
+    control_regs.config &= ~(MXC_MAX31825_CONFIG_REGISTER_RESOLUTION_MASK);
 
-//     control_regs.config |= (MXC_MAX31825_RESOLUTION_12_BITS);
-// }
+    control_regs.config |= (MXC_MAX31825_RESOLUTION_12_BITS);
+}
 
 
 int OW_MAX31825_Test1(void){
@@ -470,12 +470,20 @@ int OW_MAX31825_Test1(void){
     }
 
 
-    // Set_High_Alarm_Threshold(28.0);
+    Set_High_Alarm_Threshold(28.0);
 
-    // Set_Low_Alarm_Threshold(20.0);
+    Set_Low_Alarm_Threshold(20.0);
 
-    //MXC_Config_MAX31825(MXC_MAX31825_RESOLUTION_12_BITS,INTERRUPT_MODE);
-    uint8_t buf[] = {0x75,0x07,0xFF,0x90,0xFC}; //Writing into config bits
+    MXC_Config_MAX31825(MXC_MAX31825_RESOLUTION_12_BITS,INTERRUPT_MODE,EIGHT_IN_1_SEC);
+
+
+    uint8_t upper_TH = (control_regs.TH >> 8); 
+    uint8_t lower_TH = (uint8_t)(0x00FF&(control_regs.TH));
+
+    uint8_t upper_TL = (control_regs.TL >> 8);
+    uint8_t lower_TL = (uint8_t)(0x00FF&(control_regs.TL));
+
+    uint8_t buf[] = {control_regs.config,upper_TL,lower_TL,upper_TH,lower_TH}; //Writing into config bits
 
     err = Write_Scratchpad(buf);
     if ( err != 0){

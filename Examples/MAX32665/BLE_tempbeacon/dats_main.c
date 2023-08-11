@@ -247,12 +247,18 @@ static uint8_t datsScanDataDisc[] = {
     'P'
 };
 char dataToEncrypt[16] = {0x00};
+
+/**
+ * 
+*/
 void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
 
     static uint16_t previousSensorValue = 0;
     //Update only if value has changed
     if (TempSensorValue != previousSensorValue){ 
         previousSensorValue = TempSensorValue;
+
+        //Load the unsigned value into 
         sprintf(dataToEncrypt, "%u", TempSensorValue);
 
         char* encryptedData = AES128_ECB_enc(dataToEncrypt);
@@ -265,6 +271,9 @@ void myTimerHandlerCB(wsfEventMask_t event, wsfMsgHdr_t *pMsg){
     WsfTimerStartMs(&myTimer, delayStart_ms);
 }
 
+/** Updates the TempSensorValue global in the dats_main.c file when the timer interrupt is triggered
+ * 
+*/
 void updateTempValue(uint16_t tmpVal){
     TempSensorValue = tmpVal;
 }

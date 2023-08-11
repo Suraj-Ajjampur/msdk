@@ -60,7 +60,8 @@ void ascii_to_byte(const char *src, char *dst, int len)
     }
     return;
 }
-
+/** Encrypts the input data based on the common key shared between client and beacon
+*/
 char* AES128_ECB_enc(char* inputData)
 {
     char key[MXC_AES_KEY_128_LEN];
