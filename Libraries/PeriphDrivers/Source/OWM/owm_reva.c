@@ -36,6 +36,7 @@
 #include "mxc_assert.h"
 #include "mxc_sys.h"
 #include "owm_reva.h"
+#include "owm.h"
 
 /* **** Definitions **** */
 #define MXC_OWM_CLK_FREQ 1000000 //1-Wire requires 1MHz clock
@@ -686,4 +687,52 @@ static uint8_t update_crc8(uint8_t crc, uint8_t val)
     }
 
     return crc;
+}
+
+int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req)
+{
+    unsigned int numToWrite, numToRead;
+
+    if ((mxc_owm_regs_t *)(req->owm) < 0) {
+        return E_BAD_PARAM;
+    }
+
+    if (req->txLen) {
+        if (req->txData == NULL) {
+            return E_BAD_PARAM;
+        }
+
+        req->txCnt = 0;
+        // (mxc_owm_regs_t *)(req->owm) = (void *)req;
+
+        // Enable TX Threshold interrupt
+        MXC_OWM_EnableInt(MXC_F_OWM_INTEN_TX_DATA_EMPTY);
+
+        // numToWrite = MXC_UART_GetTXFIFOAvailable((mxc_owm_regs_t *)(req->owm));
+        // numToWrite = numToWrite > (req->txLen - req->txCnt) ? req->txLen - req->txCnt : numToWrite;
+        // req->txCnt += MXC_UART_WriteTXFIFO((mxc_owm_regs_t *)(req->owm), &req->txData[req->txCnt],
+        //                                    numToWrite);
+
+    }
+
+    if (req->rxLen) {
+        if (req->rxData == NULL) {
+            MXC_OWM_DisableInt(0xFFFFFFFF);
+            return E_BAD_PARAM;
+        }
+
+        req->rxCnt = 0;
+        // ((mxc_owm_regs_t *)(req->owm)) = (void *)req;
+
+        // Enable RX Ready interrupt
+        // MXC_UART_EnableInt((mxc_owm_regs_t *)(req->owm), MXC_F_OWM_REVA_INTEN_RX_DATA_READY);
+
+        // numToRead = MXC_UART_GetRXFIFOAvailable((mxc_owm_regs_t *)(req->owm));
+        // numToRead = numToRead > (req->rxLen - req->rxCnt) ? req->rxLen - req->rxCnt : numToRead;
+        // req->rxCnt += MXC_UART_ReadRXFIFO((mxc_owm_regs_t *)(req->owm), &req->rxData[req->rxCnt],
+        //                                   numToRead);
+        MXC_OWM_ClearFlags(MXC_F_OWM_REVA_INTFL_RX_DATA_READY);
+    }
+
+    return E_NO_ERROR;
 }

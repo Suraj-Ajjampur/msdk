@@ -274,3 +274,8 @@ int MXC_OWM_BitBang_Disable(void)
 {
     return MXC_OWM_RevA_BitBang_Disable((mxc_owm_reva_regs_t *)MXC_OWM);
 }
+
+int MXC_OWM_TransactionAsync(mxc_owm_req_t *req){
+    
+    return MXC_OWM_RevA_TransactionAsync(req);
+}

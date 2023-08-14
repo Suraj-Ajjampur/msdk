@@ -41,11 +41,18 @@
 #include "owm_reva_regs.h"
 #include "owm_regs.h"
 
-/* **** Definitions **** */
+typedef struct _mxc_owm_reva_req_t mxc_owm_reva_req_t;
 
-/* **** Globals **** */
-
-/* **** Functions **** */
+struct _mxc_owm_reva_req_t {
+    mxc_owm_reva_regs_t *owm;
+    uint8_t *txData;
+    uint8_t *rxData;
+    uint32_t txLen;
+    uint32_t rxLen;
+    uint32_t txCnt;
+    uint32_t rxCnt;
+    mxc_owm_complete_cb_t callback;
+};
 
 /* ************************************************************************* */
 int MXC_OWM_RevA_Init(mxc_owm_reva_regs_t *owm, const mxc_owm_cfg_t *cfg);
@@ -81,5 +88,6 @@ int MXC_OWM_RevA_BitBang_Init(mxc_owm_reva_regs_t *owm, int initialState);
 int MXC_OWM_RevA_BitBang_Read(mxc_owm_reva_regs_t *owm);
 int MXC_OWM_RevA_BitBang_Write(mxc_owm_reva_regs_t *owm, int state);
 int MXC_OWM_RevA_BitBang_Disable(mxc_owm_reva_regs_t *owm);
+int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req);
 
 #endif // LIBRARIES_PERIPHDRIVERS_SOURCE_OWM_OWM_REVA_H_

@@ -56,8 +56,42 @@ extern "C" {
  * @defgroup owm 1-Wire Master (OWM)
  * @{
  */
+typedef struct _mxc_owm_req_t mxc_owm_req_t;
+
+/**
+ * @brief   The callback routine used to indicate the transaction has terminated.
+ *
+ * @param   req         The details of the transaction.
+ * @param   result      See \ref MXC_Error_Codes for the list of error codes.
+ */
+typedef void (*mxc_owm_complete_cb_t)(mxc_owm_req_t *req, int result);
+
 
 /* **** Definitions **** */
+
+/**
+ * @brief   The information required to perform a complete 1-Wire transaction
+ *
+ * This structure is used by async based transactions.
+ */
+struct _mxc_owm_req_t {
+    mxc_owm_regs_t *owm; ///<Point to OWM registers
+    uint8_t *txData; ///< Buffer containing transmit data. For character sizes
+    ///< < 8 bits, pad the MSB of each byte with zeros. For
+    ///< character sizes > 8 bits, use two bytes per character
+    ///< and pad the MSB of the upper byte with zeros
+    uint8_t *rxData; ///< Buffer to store received data For character sizes
+    ///< < 8 bits, pad the MSB of each byte with zeros. For
+    ///< character sizes > 8 bits, use two bytes per character
+    ///< and pad the MSB of the upper byte with zeros
+    uint32_t txLen; ///< Number of bytes to be sent from txData
+    uint32_t rxLen; ///< Number of bytes to be stored in rxData
+    volatile uint32_t txCnt; ///< Number of bytes actually transmitted from txData
+    volatile uint32_t rxCnt; ///< Number of bytes stored in rxData
+
+    mxc_owm_complete_cb_t callback; ///< Pointer to function called when transaction is complete
+};
+
 
 /**
  * @brief   Enumeration type for specifying options for 1-Wire external pullup mode.
@@ -67,6 +101,7 @@ typedef enum {
     MXC_OWM_EXT_PU_ACT_LOW = 1, /**< Pullup pin is active low when enabled.         */
     MXC_OWM_EXT_PU_UNUSED = 2, /**< Pullup pin is not used for an external pullup. */
 } mxc_owm_ext_pu_t;
+
 
 /**
  * @brief   Structure type for 1-Wire Master configuration.
@@ -385,6 +420,19 @@ int MXC_OWM_BitBang_Write(int state);
 int MXC_OWM_BitBang_Disable(void);
 
 /**@} end of group owm */
+
+/**
+ * @brief   Setup an interrupt-driven OWM transaction
+ *
+ * The TX FIFO will be filled with txData if necessary
+ * Relevant interrupts will be enabled
+ *
+ * @param   req         Pointer to details of the transaction
+ *
+ * @return  See \ref MXC_Error_Codes for the list of error return codes.
+ */
+int MXC_OWM_TransactionAsync(mxc_owm_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif
