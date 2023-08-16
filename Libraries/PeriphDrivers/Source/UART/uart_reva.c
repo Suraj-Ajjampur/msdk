@@ -876,34 +876,47 @@ int MXC_UART_RevA_TransactionAsync(mxc_uart_reva_req_t *req)
 {
     unsigned int numToWrite, numToRead;
 
+    //checks if the uart registers are set up
     if (MXC_UART_GET_IDX((mxc_uart_regs_t *)(req->uart)) < 0) {
         return E_BAD_PARAM;
     }
-
+    //Number of bytes to be sent from txData is non zero
     if (req->txLen) {
+        //If buffer pointing to data is null return error
         if (req->txData == NULL) {
             return E_BAD_PARAM;
         }
-
+        //Set the number of bytes actually transmitted from txData to 0
         req->txCnt = 0;
+
+        //What is this line doing?
         TxAsyncRequests[MXC_UART_GET_IDX((mxc_uart_regs_t *)(req->uart))] = (void *)req;
 
         // Enable TX Threshold interrupt
         MXC_UART_EnableInt((mxc_uart_regs_t *)(req->uart), MXC_F_UART_REVA_INT_EN_TX_FIFO_THRESH);
 
+        //Fetch the free space available in fifo
         numToWrite = MXC_UART_GetTXFIFOAvailable((mxc_uart_regs_t *)(req->uart));
+        //The below expression ensures that numToWrite is set to the smaller of the two values: the available space in the FIFO or the remaining bytes to be sent. 
+        //This helps prevent overflowing the FIFO buffer or sending more data than what's left to be transmitted.
         numToWrite = numToWrite > (req->txLen - req->txCnt) ? req->txLen - req->txCnt : numToWrite;
+
         req->txCnt += MXC_UART_WriteTXFIFO((mxc_uart_regs_t *)(req->uart), &req->txData[req->txCnt],
                                            numToWrite);
     }
 
+    //Number of bytes to be sent from txData is non zero
     if (req->rxLen) {
+        //If buffer pointing to data is null return error and clear all interrupt flags
         if (req->rxData == NULL) {
             MXC_UART_DisableInt((mxc_uart_regs_t *)(req->uart), 0xFFFFFFFF);
             return E_BAD_PARAM;
         }
 
+        //Set the number of bytes actually recieved from RxData to 0
         req->rxCnt = 0;
+        
+        //What is this line doing?
         RxAsyncRequests[MXC_UART_GET_IDX((mxc_uart_regs_t *)(req->uart))] = (void *)req;
 
         // All error interrupts are related to RX
@@ -912,10 +925,15 @@ int MXC_UART_RevA_TransactionAsync(mxc_uart_reva_req_t *req)
         // Enable RX Threshold interrupt
         MXC_UART_EnableInt((mxc_uart_regs_t *)(req->uart), MXC_F_UART_REVA_INT_EN_RX_FIFO_THRESH);
 
+        //Fetch the free space available in fifo
         numToRead = MXC_UART_GetRXFIFOAvailable((mxc_uart_regs_t *)(req->uart));
+        //numToWrite is set to the smaller of the two values: the available space in the FIFO or 
+        //the remaining bytes to be received. 
+        //This helps prevent overflowing the FIFO buffer or receiving more data than what's left to be received.
         numToRead = numToRead > (req->rxLen - req->rxCnt) ? req->rxLen - req->rxCnt : numToRead;
         req->rxCnt += MXC_UART_ReadRXFIFO((mxc_uart_regs_t *)(req->uart), &req->rxData[req->rxCnt],
                                           numToRead);
+        //Clears the interrupt flags for RX_FIFO_THRESHOLD
         MXC_UART_ClearFlags((mxc_uart_regs_t *)(req->uart), MXC_F_UART_REVA_INT_FL_RX_FIFO_THRESH);
     }
 

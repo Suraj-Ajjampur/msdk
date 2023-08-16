@@ -37,6 +37,7 @@
 #include "mxc_sys.h"
 #include "owm_reva.h"
 #include "owm.h"
+#include "stdbool.h"
 
 /* **** Definitions **** */
 #define MXC_OWM_CLK_FREQ 1000000 //1-Wire requires 1MHz clock
@@ -770,6 +771,16 @@ int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req)
     return E_NO_ERROR;
 }
 
+/** 
+ * 
+*/
+int MXC_OWM_RevA_AsyncCallback(mxc_owm_reva_regs_t *owm, int retVal){
+    int retvalTx, retvalRx;
+    bool reqMatch;  
+
+
+
+}
 int MXC_OWM_RevA_AsyncHandler(mxc_owm_reva_regs_t *owm){
 
     unsigned int flags, numToWrite, numToRead;
@@ -781,13 +792,54 @@ int MXC_OWM_RevA_AsyncHandler(mxc_owm_reva_regs_t *owm){
 
     flags = MXC_OWM_GetFlags();
 
+    //if error flag is detected
     if (owm->intfl & MXC_F_OWM_REVA_INTEN_LINE_SHORT) {
         //Need to create a function for this
         MXC_OWM_AsyncCallback((mxc_owm_regs_t *)owm, E_COMM_ERR);
-        //Need to create a function for this
-        MXC_OWM_AsyncStop((mxc_owm_regs_t *)owm);
+        
+        //Disable TX and RX interrupts
+        owm->inten &= ~(MXC_F_OWM_REVA_INTEN_RX_DATA_READY);
+        owm->inten &= ~(MXC_F_OWM_REVA_INTEN_TX_DATA_EMPTY);
         return E_INVALID;
     }
 
-    
+    //Instance of the req
+    req = (mxc_owm_reva_req_t *)(mxc_owm_regs_t *)owm;
+
+        if ((flags & MXC_F_OWM_REVA_INTFL_TX_DATA_EMPTY) && (req != NULL) && (req->txLen)) {
+        numToWrite = MXC_UART_GetTXFIFOAvailable((mxc_owm_regs_t *)(req->owm));
+        numToWrite = req->txLen - req->txCnt;
+        req->txCnt += MXC_UART_WriteTXFIFO((mxc_owm_regs_t *)(req->owm), &req->txData[req->txCnt],
+                                           numToWrite);
+        MXC_OWM_ClearFlags(MXC_F_OWM_INTFL_TX_DATA_EMPTY);
+    }
+
+    if (req->txCnt == req->txLen) {
+        MXC_UART_TxAsyncCallback((mxc_owm_regs_t *)owm, E_NO_ERROR);
+        //Write function
+        (mxc_owm_regs_t *)owm
+        MXC_UART_TxAsyncStop((mxc_owm_regs_t *)uart);
+    }
+
+    req = (mxc_owm_reva_req_t *)(mxc_owm_regs_t *)owm;
+
+    if ((flags & MXC_F_UART_REVA_INT_FL_RX_FIFO_THRESH) && (req != NULL) && (req->rxLen)) {
+        numToRead = MXC_UART_GetRXFIFOAvailable((mxc_uart_regs_t *)(req->uart));
+        numToRead = numToRead > (req->rxLen - req->rxCnt) ? req->rxLen - req->rxCnt : numToRead;
+        req->rxCnt += MXC_UART_ReadRXFIFO((mxc_uart_regs_t *)(req->uart), &req->rxData[req->rxCnt],
+                                          numToRead);
+
+        if ((req->rxLen - req->rxCnt) < MXC_UART_GetRXThreshold((mxc_uart_regs_t *)(req->uart))) {
+            MXC_UART_SetRXThreshold((mxc_uart_regs_t *)(req->uart), req->rxLen - req->rxCnt);
+        }
+
+        MXC_OWM_ClearFlags(MXC_F_OWM_INTFL_RX_DATA_READY);
+    }
+
+    if (req->rxCnt == req->rxLen) {
+        MXC_UART_RxAsyncCallback((mxc_owm_regs_t *)owm, E_NO_ERROR);
+        MXC_UART_RxAsyncStop((mxc_owm_regs_t *)owm);
+    }
+
 }
+
