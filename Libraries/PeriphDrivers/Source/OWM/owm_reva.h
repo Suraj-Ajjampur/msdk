@@ -89,5 +89,6 @@ int MXC_OWM_RevA_BitBang_Read(mxc_owm_reva_regs_t *owm);
 int MXC_OWM_RevA_BitBang_Write(mxc_owm_reva_regs_t *owm, int state);
 int MXC_OWM_RevA_BitBang_Disable(mxc_owm_reva_regs_t *owm);
 int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req);
+int MXC_OWM_RevA_AsyncHandler(mxc_owm_reva_regs_t *owm);
 
 #endif // LIBRARIES_PERIPHDRIVERS_SOURCE_OWM_OWM_REVA_H_

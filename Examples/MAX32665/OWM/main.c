@@ -44,13 +44,31 @@
 #include "nvic_table.h"
 #include "max32665.h"
 
-#define INTERRUPT_MODE              0
+#define INTERRUPT_MODE              1
 
 #if (INTERRUPT_MODE)
 #define OWM_INTEN_RX_TX_POS         1
 #define OWM_INT_EN                  (3 << OWM_INTEN_RX_TX_POS)
-mxc_owm_req_t owm;
+mxc_owm_req_t trans_req;
+#define WRITE_SIZE  5
+#define READ_SIZE   9
 #endif
+
+volatile int TX_RX_FLAG;
+static uint8_t Write_Buffer[WRITE_SIZE];
+static uint8_t Read_buffer[READ_SIZE];
+
+void OWM_Handler(void)
+{
+    MXC_OWM_AsyncHandler(trans_req->owm);
+}
+
+void OWMCallback(mxc_owm_req_t *req, int error)
+{
+    //Store 1-Wire values into a buffer
+    TX_RX_FLAG = error;
+    if (MXC_OWM_TransactionAsync(trans_req) != E_NO_ERROR) {}
+}
 
 int32_t ow_romid_test(uint8_t od)
 {
@@ -124,8 +142,6 @@ int main(void)
     //Set up RX Data Ready function to trigger an interrupt each time a byte of Data is read
     NVIC_ClearPendingIRQ(OWM_IRQn);
     NVIC_DisableIRQ(OWM_IRQn);
-
-    MXC_OWM_EnableInt(OWM_INT_EN);
     NVIC_EnableIRQ(OWM_IRQn);
     MXC_NVIC_SetVector(OWM_IRQn,OWM_TX_RX_Handler);
     NVIC_SetPriority(OWM_IRQn,0);
@@ -141,6 +157,14 @@ int main(void)
     MXC_OWM_Init(&owm_cfg, MAP_B); // 1-Wire pins P0.12/13
 #else
     MXC_OWM_Init(&owm_cfg, MAP_C); // 1-Wire pins P0.24/25
+
+    trans_req.owm = MXC_BASE_OWM;
+    trans_req.rxData = Read_buffer;
+    trans_req.rxLen = READ_SIZE;
+    trans_req.txData = Write_Buffer;
+    trans_req.txLen = WRITE_SIZE;
+    trans_req.callback = OWMCallback;
+    if (MXC_OWM_TransactionAsync(trans_req) != E_NO_ERROR) {}
 
     
 #endif

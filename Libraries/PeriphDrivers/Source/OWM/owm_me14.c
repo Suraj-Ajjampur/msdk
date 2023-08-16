@@ -279,3 +279,9 @@ int MXC_OWM_TransactionAsync(mxc_owm_req_t *req){
     
     return MXC_OWM_RevA_TransactionAsync(req);
 }
+
+void MXC_OWM_AsyncHandler(mxc_owm_regs_t *owm)
+{
+    MXC_UART_RevA_AsyncHandler((mxc_owm_reva_regs_t *)owm);
+}
+

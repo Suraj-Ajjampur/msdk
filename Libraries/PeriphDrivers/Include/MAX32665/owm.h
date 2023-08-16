@@ -80,6 +80,12 @@ struct _mxc_owm_req_t {
     ///< < 8 bits, pad the MSB of each byte with zeros. For
     ///< character sizes > 8 bits, use two bytes per character
     ///< and pad the MSB of the upper byte with zeros
+
+    static uint8_t *buffer; //
+
+    struct allocate;
+    struct deallocate;
+    //Have a single buffer to malloc each time a buffer is passed in.
     uint8_t *rxData; ///< Buffer to store received data For character sizes
     ///< < 8 bits, pad the MSB of each byte with zeros. For
     ///< character sizes > 8 bits, use two bytes per character
@@ -424,14 +430,25 @@ int MXC_OWM_BitBang_Disable(void);
 /**
  * @brief   Setup an interrupt-driven OWM transaction
  *
- * The TX FIFO will be filled with txData if necessary
- * Relevant interrupts will be enabled
+ * The Data Register will be filled with TX or RX data if necessary
+ * Relevant interrupts will be enabled.
  *
  * @param   req         Pointer to details of the transaction
  *
  * @return  See \ref MXC_Error_Codes for the list of error return codes.
  */
 int MXC_OWM_TransactionAsync(mxc_owm_req_t *req);
+
+/**
+ * @brief   The processing function for asynchronous transactions.
+ *
+ * When using the asynchronous functions, the application must call this
+ * function periodically. This can be done from within the OWM interrupt
+ * handler or periodically by the application if OWM interrupts are disabled.
+ *
+ * @param   uart         Pointer to OWM registers 
+ */
+void MXC_OWM_AsyncHandler(mxc_owm_regs_t *owm);
 
 #ifdef __cplusplus
 }

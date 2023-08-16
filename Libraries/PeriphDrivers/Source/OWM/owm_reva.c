@@ -689,6 +689,47 @@ static uint8_t update_crc8(uint8_t crc, uint8_t val)
     return crc;
 }
 
+unsigned int MXC_OWM_RevA_Read_Async(mxc_owm_regs_t *owm, unsigned char *bytes,
+                                       unsigned int len)
+{
+    static unsigned int read_idx = 0;
+
+    if (read_idx < len) {
+        //Check if there is already data in the register
+        if (owm->data) {
+            return read_idx;
+        }
+        //Load value into the buffer
+        bytes[read_idx++] = owm->data; 
+    }
+    else if (read_idx = len){
+        //Reset the idx
+        read_idx = 0;
+    }
+    return read_idx;
+}
+
+unsigned int MXC_OWM_RevA_Write_Async(mxc_owm_regs_t *owm, unsigned char *bytes,
+                                        unsigned int len)
+{
+    static unsigned int write_idx = 0;
+
+    if (write_idx < len) {
+        //Check if there is already data in the register
+        //Reading this register will
+        if (owm->data) {
+            return write_idx;
+        }
+        //Write into the data register
+        owm->data = bytes[write_idx++];
+    }
+    else if (write_idx = len){
+        //Reset the idx
+        write_idx = 0;
+    }
+    return write_idx;
+}
+
 int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req)
 {
     unsigned int numToWrite, numToRead;
@@ -702,16 +743,13 @@ int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req)
             return E_BAD_PARAM;
         }
 
-        req->txCnt = 0;
-        // (mxc_owm_regs_t *)(req->owm) = (void *)req;
-
         // Enable TX Threshold interrupt
         MXC_OWM_EnableInt(MXC_F_OWM_INTEN_TX_DATA_EMPTY);
 
-        // numToWrite = MXC_UART_GetTXFIFOAvailable((mxc_owm_regs_t *)(req->owm));
-        // numToWrite = numToWrite > (req->txLen - req->txCnt) ? req->txLen - req->txCnt : numToWrite;
-        // req->txCnt += MXC_UART_WriteTXFIFO((mxc_owm_regs_t *)(req->owm), &req->txData[req->txCnt],
-        //                                    numToWrite);
+        //Set to the the remaining bytes to be received. 
+        numToWrite = req->txLen - req->txCnt; //Is the val of txCnt retained btw function calls?
+        req->txCnt += MXC_UART_WriteTXFIFO((mxc_owm_regs_t *)(req->owm), &req->txData[req->txCnt],
+                                            numToWrite);
 
     }
 
@@ -721,18 +759,35 @@ int MXC_OWM_RevA_TransactionAsync(mxc_owm_reva_req_t *req)
             return E_BAD_PARAM;
         }
 
-        req->rxCnt = 0;
-        // ((mxc_owm_regs_t *)(req->owm)) = (void *)req;
-
         // Enable RX Ready interrupt
-        // MXC_UART_EnableInt((mxc_owm_regs_t *)(req->owm), MXC_F_OWM_REVA_INTEN_RX_DATA_READY);
+        MXC_OWM_EnableInt(MXC_F_OWM_REVA_INTEN_RX_DATA_READY);
+        numToRead = numToRead > req->rxLen - req->rxCnt; //Is the val of rxCnt retained btw function calls?
+        req->rxCnt += MXC_OWM_RevA_Read((mxc_owm_regs_t *)(req->owm), &req->rxData[req->rxCnt],
+                                           numToRead);
 
-        // numToRead = MXC_UART_GetRXFIFOAvailable((mxc_owm_regs_t *)(req->owm));
-        // numToRead = numToRead > (req->rxLen - req->rxCnt) ? req->rxLen - req->rxCnt : numToRead;
-        // req->rxCnt += MXC_UART_ReadRXFIFO((mxc_owm_regs_t *)(req->owm), &req->rxData[req->rxCnt],
-        //                                   numToRead);
         MXC_OWM_ClearFlags(MXC_F_OWM_REVA_INTFL_RX_DATA_READY);
     }
-
     return E_NO_ERROR;
+}
+
+int MXC_OWM_RevA_AsyncHandler(mxc_owm_reva_regs_t *owm){
+
+    unsigned int flags, numToWrite, numToRead;
+    mxc_owm_reva_req_t *req;
+
+    if (((mxc_owm_regs_t *)owm) < 0) {
+        return E_BAD_PARAM;
+    }
+
+    flags = MXC_OWM_GetFlags();
+
+    if (owm->intfl & MXC_F_OWM_REVA_INTEN_LINE_SHORT) {
+        //Need to create a function for this
+        MXC_OWM_AsyncCallback((mxc_owm_regs_t *)owm, E_COMM_ERR);
+        //Need to create a function for this
+        MXC_OWM_AsyncStop((mxc_owm_regs_t *)owm);
+        return E_INVALID;
+    }
+
+    
 }
